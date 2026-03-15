@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title data-i18n="auth_portal_title">Healthmate | Portal</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+    <style>
+        /* 🚨 إصلاح مشكلة الطول والاختفاء (Scroll Fix) */
+        body.royal-body {
+            overflow-y: auto !important; 
+            min-height: 100vh !important;
+            height: auto !important;
+            padding-top: calc(env(safe-area-inset-top, 40px) + 20px) !important;
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 20px) !important;
+        }
+
+        /* 👑 ستايل التنبيهات الملكية (اغتيال تنبيهات المتصفح) */
+        .custom-alert-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            display: none; justify-content: center; align-items: center; z-index: 9999999;
+        }
+        .custom-alert-box {
+            background: #111; border: 1px solid #333;
+            padding: 25px; border-radius: 25px; width: 80%; max-width: 350px;
+            text-align: center; animation: scaleUp 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        [data-theme="light"] .custom-alert-box { background: #fff; border-color: #ddd; }
+        [data-theme="light"] .custom-alert-box h3 { color: #111 !important; }
+        @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* ستايل التنبيه الطائر الأصلي الخاص بك */
+        #toast-msg {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #000;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 100000;
+            transition: 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            opacity: 0;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #toast-msg.show {
+            bottom: 30px;
+            opacity: 1;
+        }
+        #toast-msg ion-icon { font-size: 20px; color: #ff4d4d; }
+
+        /* حركات شاشة التحميل */
+@keyframes pulseLogo { 
+    0% { transform: scale(0.95); filter: drop-shadow(0 0 0 rgba(0, 210, 255, 0.7)); } 
+    70% { transform: scale(1.05); filter: drop-shadow(0 0 15px rgba(0, 210, 255, 0)); } 
+    100% { transform: scale(0.95); filter: drop-shadow(0 0 0 rgba(0, 210, 255, 0)); } 
+}
+@keyframes bounceDots { 
+    0%, 80%, 100% { transform: scale(0); background: #333; } 
+    40% { transform: scale(1); background: var(--blue, #00d2ff); } 
+}
+    </style>
+</head>
+<body class="royal-body">
+
+    <div id="royal-splash" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 99999999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease;">
+    <ion-icon name="medkit" style="font-size: 80px; color: var(--blue, #00d2ff); animation: pulseLogo 1.5s infinite;"></ion-icon>
+    <h1 style="color: white; font-family: 'Cairo'; margin-top: 15px; font-weight: 900; letter-spacing: 1px;">Healthmate</h1>
+    
+    <div style="display: flex; gap: 8px; margin-top: 40px;">
+        <div style="width: 12px; height: 12px; background: #555; border-radius: 50%; animation: bounceDots 1.4s infinite ease-in-out both;"></div>
+        <div style="width: 12px; height: 12px; background: #555; border-radius: 50%; animation: bounceDots 1.4s infinite ease-in-out both; animation-delay: -0.32s;"></div>
+        <div style="width: 12px; height: 12px; background: #555; border-radius: 50%; animation: bounceDots 1.4s infinite ease-in-out both; animation-delay: -0.16s;"></div>
+    </div>
+</div>
+     <div id="top-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; background: var(--blue, #00f3ff); width: 0%; z-index: 999999; transition: width 0.3s ease; display: none; box-shadow: 0 0 10px var(--blue, #00f3ff);"></div>
+    
+    <div class="lang-trigger" onclick="window.toggleLangModal()" style="position: fixed; top: calc(env(safe-area-inset-top, 35px) + 20px); left: 20px; z-index: 10001; cursor: pointer; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; display: flex; align-items: center; gap: 8px; color: white;">
+        <ion-icon name="globe-outline"></ion-icon>
+        <span id="current-lang-label" style="font-weight: bold; font-size: 14px;">AR</span>
+    </div>
+
+    <div class="theme-trigger" onclick="window.toggleDarkMode()" style="position: fixed; top: calc(env(safe-area-inset-top, 35px) + 20px); right: 20px; z-index: 10001; cursor: pointer; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; display: flex; align-items: center; color: white; font-size: 20px;">
+        <ion-icon name="moon-outline" id="theme-icon"></ion-icon>
+    </div>
+
+    <div id="lang-modal" class="glass-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); backdrop-filter: blur(15px); z-index: 10002; justify-content: center; align-items: center;">
+        <div class="royal-modal" style="background: #0a0a0a; border: 1px solid #222; padding: 30px; border-radius: 25px; text-align: center; min-width: 280px;">
+            <h3 data-i18n="opt_lang" style="color: white; margin-bottom: 20px; font-family: 'Cairo';">اختر لغة الواجهة</h3>
+            <div class="lang-grid" style="display: grid; gap: 10px;">
+                <button onclick="window.setAppLang('ar')" class="lang-option" data-i18n="lang_ar" style="padding: 12px; border-radius: 12px; border: 1px solid #333; background: #111; color: white; cursor: pointer; font-family: 'Cairo';">العربية</button>
+                <button onclick="window.setAppLang('en')" class="lang-option" data-i18n="lang_en" style="padding: 12px; border-radius: 12px; border: 1px solid #333; background: #111; color: white; cursor: pointer; font-family: 'Cairo';">English</button>
+                <button onclick="window.setAppLang('fr')" class="lang-option" data-i18n="lang_fr" style="padding: 12px; border-radius: 12px; border: 1px solid #333; background: #111; color: white; cursor: pointer; font-family: 'Cairo';">Français</button>
+            </div>
+            <button onclick="window.toggleLangModal()" style="background: none; border: none; color: #ff4d4d; margin-top: 20px; cursor: pointer; font-family: 'Cairo'; font-weight: bold;" data-i18n="btn_cancel">إغلاق</button>
+        </div>
+    </div>
+
+<main class="auth-box">
+        <div id="login-container" class="auth-content active">
+            <div class="header-zone">
+                <div class="main-logo"><ion-icon name="medkit"></ion-icon></div>
+                <h1>Healthmate</h1>
+                <p data-i18n="auth_subtitle">بوابة النخبة الطبية</p>
+            </div>
+
+            <div class="input-stack">
+                <div class="r-field">
+                    <input type="email" id="l-email" placeholder=" " required>
+                    <label data-i18n="auth_email">البريد الإلكتروني</label>
+                </div>
+                <div class="r-field">
+                    <input type="password" id="l-pass" placeholder=" "  required>
+                    <label data-i18n="auth_pass">كلمة المرور</label>
+                    <ion-icon name="eye-outline" class="field-icon" style="position: absolute; left: 10px; top: 15px; cursor: pointer; color: #888;" onclick="window.togglePass('l-pass')" data-i18n="auth_show_pass_title"></ion-icon>
+                </div>
+            </div>
+
+            <div class="extra-actions" style="margin-bottom: 20px;">
+                <span onclick="window.handleForgotPass()" class="r-link" style="color: #888; cursor: pointer; font-size: 13px;" data-i18n="opt_reset_pass">نسيت كلمة السر؟</span>
+            </div>
+
+            <button class="btn-royal-main" onclick="window.authHandler.login()" id="login-trigger">
+                <span data-i18n="auth_btn_login">تسجيل الدخول</span>
+            </button>
+
+            <div class="separator" style="text-align: center; margin: 20px 0; color: #555; font-size: 12px; position: relative;"><span data-i18n="auth_or" style="background: var(--royal-black); padding: 0 10px; position: relative; z-index: 1;">أو المتابعة عبر</span><hr style="position: absolute; top: 5px; width: 100%; border: 0; border-top: 1px solid #222; z-index: 0;"></div>
+
+            <button class="btn-royal-google" onclick="window.authHandler.googleLogin()">
+                <ion-icon name="logo-google"></ion-icon> <span data-i18n="auth_google_btn">Google</span>
+            </button>
+
+            <p class="switch-text" style="text-align: center; margin-top: 30px; font-size: 14px;">
+                <span data-i18n="auth_no_account" style="color: #666;">ليس لديك حساب؟</span>
+                <strong onclick="window.switchAuth('signup-container')" style="color: white; cursor: pointer; margin-right: 5px;" data-i18n="auth_signup_title">انضم إلينا</strong>
+            </p>
+        </div>
+
+        <div id="signup-container" class="auth-content" style="display: none;">
+           <div class="auth-back-btn" onclick="window.switchAuth('login-container')">
+    <ion-icon name="arrow-forward-outline" data-i18n="btn_back_title"></ion-icon>
+</div>
+            
+            <div class="header-zone">
+                <h2 data-i18n="auth_signup_title" style="margin-top: 0;">انضم إلينا</h2>
+            </div>
+
+            <div class="input-stack">
+                <input type="hidden" id="reg-role" value="">
+
+                <div class="role-selector-zone">
+                    <label style="display:block; text-align:center; color:#888; font-size:12px; margin-bottom:15px;" data-i18n="auth_role_placeholder">حدد هويتك للمتابعة</label>
+                    <div class="role-circles">
+                        <div class="r-circle" id="circle-doctor" onclick="window.selectRole('doctor', this)">👨‍⚕️</div>
+                        <div class="r-circle" id="circle-pharmacist" onclick="window.selectRole('pharmacist', this)">💊</div>
+                        <div class="r-circle" id="circle-patient" onclick="window.selectRole('patient', this)" >👨‍🦽</div>
+                        <div class="r-circle of-circle" id="circle-offline" onclick="window.selectRole('offline', this)">OF</div>
+                    </div>
+                </div>
+                <div class="r-field">
+    <input type="text" id="reg-name" placeholder=" " required>
+    <label data-i18n="auth_name">الاسم الكامل</label>
+</div>
+<div class="r-field">
+    <input type="email" id="reg-email" placeholder=" "  required>
+    <label data-i18n="auth_email">البريد الإلكتروني</label>
+</div>
+<div class="r-field">
+    <input type="password" id="reg-pass" placeholder=" " required>
+    <label data-i18n="auth_pass">كلمة المرور</label>
+</div>
+</div>
+
+<button class="btn-royal-main" onclick="window.authHandler.register()">
+    <span data-i18n="auth_btn_signup">تأكيد التسجيل</span>
+</button>
+
+<div class="separator" style="text-align: center; margin: 20px 0; color: #555; font-size: 12px; position: relative;">
+    <span data-i18n="auth_or" style="background: var(--royal-black); padding: 0 10px; position: relative; z-index: 1;">أو</span>
+    <hr style="position: absolute; top: 5px; width: 100%; border: 0; border-top: 1px solid #222; z-index: 0;">
+</div>
+
+<button class="btn-royal-google" onclick="window.authHandler.googleSignup()">
+    <ion-icon name="logo-google"></ion-icon> 
+    <span data-i18n="auth_btn_google">التسجيل عبر جوجل</span>
+</button>
+</div>
+</main>
+    <div id="toast-msg"><ion-icon name="alert-circle"></ion-icon> <span id="toast-text">رسالة</span></div>
+
+    <div id="royal-alert-overlay" class="custom-alert-overlay">
+        <div class="custom-alert-box">
+            <ion-icon id="alert-icon" name="alert-circle" style="font-size: 50px; margin-bottom: 10px; color: var(--blue, #00d2ff);"></ion-icon>
+            <h3 id="alert-title" style="margin: 0 0 10px 0; color: white; font-family: 'Cairo';">تنبيه</h3>
+            <p id="alert-msg" style="color: #888; font-size: 14px; margin-bottom: 20px; font-family: 'Cairo';"></p>
+            <button class="btn-royal-main" onclick="document.getElementById('royal-alert-overlay').style.display='none'" style="width: 100%; margin: 0;">حسناً</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+
+    
+    <script src="js/languages.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+
+    <script>
+      // ==========================================
+// محرك الأزرار الدائرية (اختيار الهوية الذكي)
+// ==========================================
+// ==========================================
+// محرك الأزرار الدائرية (اختيار الهوية الذكي) - تم إصلاحه 🛠️
+// ==========================================
+window.selectRole = function(role, element) {
+    // جلب القاموس فوراً للتعامل مع الرسائل
+    const dict = window.translations[localStorage.getItem('app_lang') || 'ar'];
+
+    // 1. مسح التوهج من جميع الدوائر
+    document.querySelectorAll('.r-circle').forEach(el => {
+        el.className = 'r-circle' + (el.id === 'circle-offline' ? ' of-circle' : '');
+    });
+
+    // 2. إعطاء التوهج للزر المضغوط
+    element.classList.add(`active-${role}`);
+
+    // 🚨 الجراحة الدقيقة هنا: تسجيل الهوية في الحقل المخفي 🚨
+    if (role !== 'offline') {
+        document.getElementById('reg-role').value = role;
+        
+        // حفظ الرتبة في الذاكرة عشان "رادار جوجل" يقدر يسجلها صح لو سجل بالويب
+        localStorage.setItem('pending_role', role); 
+    }
+
+   if (role === 'offline') {
+        document.getElementById('reg-role').value = '';
+        window.showToast(dict.msg_offline_loading || "جاري الدخول لوضع الطوارئ...");
+        setTimeout(() => {
+            window.location.href = "patient/offline_dash.html"; 
+        }, 800);
+    }
+};
+
+// ==========================================
+// 🚀 محرك التنقل السريع بين الصفحات (Smart Navigator)
+// ==========================================
+window.goToPage = function(pageUrl) {
+    const progressBar = document.getElementById('top-progress-bar');
+    
+    // إظهار الشريط وتحريكه إلى 70% بسرعة
+    progressBar.style.display = 'block';
+    setTimeout(() => { progressBar.style.width = '70%'; }, 10);
+    
+    // بعد أجزاء من الثانية، ننتقل للصفحة ليحدث تفريغ الذاكرة (RAM Clear)
+    setTimeout(() => {
+        progressBar.style.width = '100%';
+        window.location.href = pageUrl;
+    }, 350); // 350 ملي ثانية كافية لعمل أنيميشن مريح للعين
+};
+
+window.showToast = function(msg) {
+    const toast = document.getElementById('toast-msg');
+    const text = document.getElementById('toast-text');
+    if(text) text.innerText = msg;
+    if(toast) toast.classList.add('show');
+    setTimeout(() => { if(toast) toast.classList.remove('show'); }, 3500);
+};
+
+// 👑 السحر هنا: اختطاف أوامر التنبيه العادية وتحويلها للنظام الملكي
+window.royalAlert = function(title, msg, iconName = 'alert-circle', color = '#00d2ff') {
+    document.getElementById('alert-title').innerText = title;
+    document.getElementById('alert-msg').innerText = msg;
+    document.getElementById('alert-icon').name = iconName;
+    document.getElementById('alert-icon').style.color = color;
+    document.getElementById('royal-alert-overlay').style.display = 'flex';
+};
+
+// إجبار ملف auth.js وأي ملف آخر على استخدام النافذة الملكية عند طلب alert()
+window.alert = function(msg) {
+    window.royalAlert("تنبيه", msg, "warning", "#ff4b2b");
+};
+
+window.switchAuth = (id) => {
+    document.querySelectorAll('.auth-content').forEach(c => {
+        c.style.display = 'none';
+        c.classList.remove('active');
+    });
+    const target = document.getElementById(id);
+    if(target) {
+        target.style.display = 'flex';
+        setTimeout(() => target.classList.add('active'), 10);
+    }
+};
+
+window.toggleLangModal = () => {
+    const m = document.getElementById('lang-modal');
+    if(m) m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+};
+
+window.setAppLang = (l) => {
+    localStorage.setItem('app_lang', l);
+    location.reload();
+};
+
+window.togglePass = (id) => {
+    const el = document.getElementById(id);
+    if(el) el.type = el.type === 'password' ? 'text' : 'password';
+};
+
+
+       // ==========================================
+// دالة تبديل الوضع الليلي (بإشعارات لغوية 🌍)
+// ==========================================
+window.toggleDarkMode = () => {
+    // جلب القاموس لإظهار التنبيه باللغة الصحيحة
+    const dict = window.translations[localStorage.getItem('app_lang') || 'ar'];
+    
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    const icon = document.getElementById('theme-icon');
+    if(icon) {
+        icon.setAttribute('name', newTheme === 'dark' ? 'moon-outline' : 'sunny-outline');
+    }
+
+    // 🚨 إضافة لمسة احترافية: إشعار المستخدم بتغيير الثيم
+    const themeMsg = newTheme === 'dark' ? (dict.msg_theme_dark || "الوضع المظلم 🌙") : (dict.msg_theme_light || "الوضع المضيء ☀️");
+    window.showToast(themeMsg);
+};
+
+// تعيين الثيم عند الفتح
+if(localStorage.getItem('theme') === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    const icon = document.getElementById('theme-icon');
+    if(icon) icon.setAttribute('name', 'sunny-outline');
+}
+
+// كود زر الرجوع الاحترافي (آمن ضد التحطم)
+document.addEventListener('DOMContentLoaded', () => {
+    // نتحقق أولاً أننا داخل تطبيق الموبايل وأن محرك Capacitor موجود
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        const App = window.Capacitor.Plugins.App;
+
+        App.addListener('backButton', () => {
+            const activeSlide = document.querySelector('.slide-page.active');
+            const activeModal = document.querySelector('.modal[style*="display: flex"]') || 
+                               document.querySelector('.modal[style*="display: block"]');
+
+            if (activeSlide) {
+                if (typeof window.closeSPA === 'function') window.closeSPA(activeSlide.id);
+            } else if (activeModal) {
+                activeModal.style.display = 'none';
+            } else {
+                App.exitApp();
+            }
+        });
+    }
+});
+    </script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ملفي السحابي</title>
+    
+    <link rel="stylesheet" href="../css/patient_dash.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+    <style>
+        body { margin: 0; padding: 0; background: var(--bg-color, #0a0a0a); min-height: 100vh; overflow-x: hidden; }
+        
+        #folder-slide {
+            position: relative !important;
+            display: flex !important;
+            flex-direction: column;
+            transform: none !important;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        .slide-header {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            padding-top: calc(env(safe-area-inset-top, 15px) + 15px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        .back-btn { font-size: 28px; cursor: pointer; color: var(--text-main); }
+
+        /* نظام التنبيهات السريعة (Toast) */
+        #royal-toast {
+            position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+            background: var(--card-bg, #1e1e1e); color: white; padding: 12px 25px;
+            border-radius: 25px; font-family: 'Cairo'; font-size: 14px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+            z-index: 999999; transition: bottom 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: flex; align-items: center; gap: 10px; white-space: nowrap;
+        }
+
+        /* نظام التنبيهات الملكي (Alert & Confirm) */
+        .custom-alert-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            display: none; justify-content: center; align-items: center; z-index: 9999999;
+        }
+        .custom-alert-box {
+            background: #111; border: 1px solid var(--border-color);
+            padding: 25px; border-radius: 25px; width: 80%; max-width: 350px;
+            text-align: center; animation: scaleUp 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="top-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; background: var(--gold, #f6e58d); width: 0%; z-index: 999999; transition: width 0.3s ease; display: none; box-shadow: 0 0 10px var(--gold);"></div>
+
+    <div id="folder-slide" class="slide-page">
+        <div class="slide-header">
+            <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.goToPage('patient_dash.html')"></ion-icon>
+            <h2 style="margin: 0; font-size: 18px; color: var(--gold);" data-i18n="folder_slide_title">ملفي السحابي 📁</h2>
+        </div>
+        
+        <div style="padding: 20px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+            <p style="color: var(--text-sub); font-size: 13px; text-align: center; margin-bottom: 20px;" data-i18n="folder_desc">احتفظ بصور التحاليل والأشعة هنا للرجوع إليها أو مشاركتها مع طبيبك في أي وقت.</p>
+            
+            <div id="cloud-upload-buttons" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <label for="cloud-upload-analysis" class="hm-btn" style="flex: 1; text-align: center; background: var(--blue); color: black; display: flex; flex-direction: column; align-items: center; padding: 15px; cursor: pointer; margin: 0; border-radius: 15px;">
+                    <ion-icon name="flask-outline" style="font-size: 24px; margin-bottom: 5px;"></ion-icon>
+                    <span data-i18n="btn_upload_analysis">رفع تحليل</span>
+                </label>
+                <input type="file" id="cloud-upload-analysis" accept="image/*" hidden onchange="window.cloudFolderEngine.uploadFile(event, 'تحليل مخبري')">
+
+                <label for="cloud-upload-scan" class="hm-btn" style="flex: 1; text-align: center; background: var(--orange); color: black; display: flex; flex-direction: column; align-items: center; padding: 15px; cursor: pointer; margin: 0; border-radius: 15px;">
+                    <ion-icon name="body-outline" style="font-size: 24px; margin-bottom: 5px;"></ion-icon>
+                    <span data-i18n="btn_upload_scan">رفع أشعة</span>
+                </label>
+                <input type="file" id="cloud-upload-scan" accept="image/*" hidden onchange="window.cloudFolderEngine.uploadFile(event, 'أشعة (راديو)')">
+            </div>
+
+            <h3 style="font-size: 15px; color: var(--text-main); margin-bottom: 10px;" data-i18n="saved_files_title">ملفاتي المحفوظة:</h3>
+            <div id="cloud-files-list" style="display: flex; flex-direction: column; gap: 12px; padding-bottom: 50px;">
+            </div>
+        </div>
+    </div>
+
+    <div id="royal-toast"><ion-icon name="information-circle"></ion-icon> <span id="toast-msg">رسالة...</span></div>
+
+    <div id="royal-alert-overlay" class="custom-alert-overlay">
+        <div class="custom-alert-box">
+            <ion-icon id="alert-icon" name="alert-circle" style="font-size: 50px; margin-bottom: 10px;"></ion-icon>
+            <h3 id="alert-title" style="margin: 0 0 10px 0; color: white; font-family: 'Cairo';">تنبيه</h3>
+            <p id="alert-msg" style="color: var(--text-sub); font-size: 14px; margin-bottom: 20px; font-family: 'Cairo';"></p>
+            <button class="hm-btn" onclick="document.getElementById('royal-alert-overlay').style.display='none'" style="width: 100%; margin: 0; background: var(--blue); color: black; font-weight: bold;">حسناً</button>
+        </div>
+    </div>
+
+    <div id="royal-confirm-overlay" class="custom-alert-overlay">
+        <div class="custom-alert-box">
+            <ion-icon id="confirm-icon" name="help-circle" style="font-size: 50px; margin-bottom: 10px;"></ion-icon>
+            <h3 id="confirm-title" style="margin: 0 0 10px 0; color: white; font-family: 'Cairo';">تأكيد</h3>
+            <p id="confirm-msg" style="color: var(--text-sub); font-size: 14px; margin-bottom: 20px; font-family: 'Cairo';"></p>
+            <div style="display: flex; gap: 10px;">
+                <button id="confirm-yes-btn" class="hm-btn" style="flex: 1; margin: 0; background: var(--red); color: white;">نعم</button>
+                <button onclick="document.getElementById('royal-confirm-overlay').style.display='none'" class="hm-btn" style="flex: 1; margin: 0; background: transparent; border: 1px solid var(--text-sub); color: var(--text-sub);">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="media-viewer-modal" class="custom-alert-overlay" style="flex-direction: column;">
+        <div style="width: 100%; padding: 20px; text-align: left; box-sizing: border-box;">
+            <ion-icon name="close-circle" style="color: white; font-size: 35px; cursor: pointer;" onclick="document.getElementById('media-viewer-modal').style.display='none'"></ion-icon>
+        </div>
+        <img id="media-viewer-img" src="" style="max-width: 95%; max-height: 80vh; object-fit: contain; border-radius: 15px;">
+    </div>
+
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="../js/languages.js"></script>
+
+    <script>
+        
+        // 1. تهيئة فايربيس
+        const firebaseConfig = {
+            apiKey: "AIzaSyDF6MRRmzfXJBW07Xb_rXVK2hJY_Xtcm6A",
+            authDomain: "healthmate-web-3d983.firebaseapp.com",
+            projectId: "healthmate-web-3d983",
+            storageBucket: "healthmate-web-3d983.firebasestorage.app",
+            appId: "1:1005719156245:web:7478909058de336f1b801c"
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        // 🚀 محرك الانتقال السلس للرجوع
+window.goToPage = function(pageUrl) {
+    const progressBar = document.getElementById('top-progress-bar');
+    if (progressBar) {
+        progressBar.style.display = 'block';
+        setTimeout(() => { progressBar.style.width = '70%'; }, 10);
+        setTimeout(() => {
+            progressBar.style.width = '100%';
+            window.location.href = pageUrl;
+        }, 300);
+    } else {
+        window.location.href = pageUrl;
+    }
+};
+        // 2. دوال التنبيهات الملكية (بديلة لـ alert الزفت)
+        window.showToast = function(msg) {
+            const toast = document.getElementById('royal-toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.style.bottom = '30px';
+            setTimeout(() => { toast.style.bottom = '-100px'; }, 3000);
+        };
+
+        window.royalAlert = function(title, msg, iconName = 'alert-circle', color = 'var(--blue)') {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-msg').innerText = msg;
+            document.getElementById('alert-icon').name = iconName;
+            document.getElementById('alert-icon').style.color = color;
+            document.getElementById('royal-alert-overlay').style.display = 'flex';
+        };
+
+        window.royalConfirm = function(title, msg, iconName = 'help-circle', color = 'var(--red)') {
+            return new Promise((resolve) => {
+                document.getElementById('confirm-title').innerText = title;
+                document.getElementById('confirm-msg').innerText = msg;
+                document.getElementById('confirm-icon').name = iconName;
+                document.getElementById('confirm-icon').style.color = color;
+                document.getElementById('royal-confirm-overlay').style.display = 'flex';
+                
+                document.getElementById('confirm-yes-btn').onclick = () => {
+                    document.getElementById('royal-confirm-overlay').style.display = 'none';
+                    resolve(true);
+                };
+            });
+        };
+
+        window.openMediaViewer = function(imgUrl) {
+            document.getElementById('media-viewer-img').src = imgUrl;
+            document.getElementById('media-viewer-modal').style.display = 'flex';
+        };
+
+        // 3. محرك الملف السحابي المستقل
+        window.cloudFolderEngine = {
+            unsubFolder: null,
+
+            init: function(targetPatientId = null) {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const listDiv = document.getElementById('cloud-files-list');
+                const currentUser = firebase.auth().currentUser;
+                
+                if (!currentUser) {
+                    listDiv.innerHTML = `<p style="text-align:center; color:var(--orange);">${dict.cloud_login_req || 'يرجى تسجيل الدخول للوصول إلى الملف السحابي 🔒'}</p>`;
+                    return;
+                }
+
+                const uidToFetch = targetPatientId || currentUser.uid;
+                const isDoctorViewing = (targetPatientId !== null && targetPatientId !== currentUser.uid);
+
+                const uploadButtons = document.getElementById('cloud-upload-buttons');
+                if (uploadButtons) uploadButtons.style.display = isDoctorViewing ? 'none' : 'flex';
+
+                if(this.unsubFolder) this.unsubFolder();
+
+                listDiv.innerHTML = `<div style="text-align:center; padding:30px; color:#888;"><ion-icon name="sync" style="animation: spin 1s linear infinite; font-size: 30px;"></ion-icon></div>`;
+
+                this.unsubFolder = firebase.firestore().collection('cloud_medical_files')
+                    .where('patientId', '==', uidToFetch)
+                    .orderBy('timestamp', 'desc')
+                    .onSnapshot(snap => {
+                        listDiv.innerHTML = '';
+                        if (snap.empty) {
+                            listDiv.innerHTML = `
+                                <div style="text-align:center; padding:30px; color:var(--text-sub); opacity: 0.6;">
+                                    <ion-icon name="cloud-offline-outline" style="font-size: 60px;"></ion-icon>
+                                    <p>${isDoctorViewing ? (dict.cloud_empty_doc || 'المريض لم يقم برفع أي ملفات طبية بعد.') : (dict.cloud_empty_patient || 'ملفك السحابي فارغ. ابدأ برفع تحاليلك الآن!')}</p>
+                                </div>`;
+                            return;
+                        }
+
+                        snap.forEach(doc => {
+                            const file = doc.data();
+                            const fileId = doc.id;
+                            const date = file.timestamp ? file.timestamp.toDate().toLocaleDateString('ar-EG') : (dict.time_now || 'الآن');
+
+                            const deleteBtn = isDoctorViewing ? '' : `<ion-icon name="trash" style="color: var(--red); font-size: 22px; padding: 10px; cursor: pointer;" onclick="window.cloudFolderEngine.deleteFile('${fileId}')"></ion-icon>`;
+
+                            listDiv.innerHTML += `
+                                <div class="cloud-file-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 10px; border-radius: 15px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+                                    <img src="${file.fileUrl}" onclick="window.openMediaViewer('${file.fileUrl}')" style="width: 60px; height: 60px; object-fit: cover; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+                                    <div class="cloud-file-info" style="flex: 1;">
+                                        <h4 style="margin: 0 0 5px 0; color: white; font-size: 15px;">${file.type}</h4>
+                                        <p style="margin: 0; color: var(--text-sub); font-size: 12px;"><ion-icon name="calendar-outline"></ion-icon> ${date}</p>
+                                    </div>
+                                    ${deleteBtn}
+                                </div>
+                            `;
+                        });
+                    }, error => {
+                        console.error(error);
+                        listDiv.innerHTML = `<p style="color:var(--red); text-align:center;">${dict.cloud_fetch_err || 'حدث خطأ. تحقق من الكونسول.'}</p>`;
+                    });
+            },
+
+            uploadFile: async function(event, fileType) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const user = firebase.auth().currentUser;
+                if (!user) return window.royalAlert("تنبيه", "يجب تسجيل الدخول لرفع الملفات", "lock-closed", "var(--orange)");
+
+                window.showToast(`جاري تشفير ورفع الـ (${fileType})... ⏳`);
+                
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async (e) => {
+                    const base64Img = e.target.result;
+                    try {
+                        await firebase.firestore().collection('cloud_medical_files').add({
+                            patientId: user.uid,
+                            type: fileType,
+                            fileUrl: base64Img,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        window.showToast("تم الرفع بنجاح! السحابة آمنة ☁️✅");
+                    } catch (error) {
+                        window.royalAlert("خطأ", "فشل الرفع، ربما الصورة كبيرة جداً ❌", "close-circle", "var(--red)");
+                    }
+                    event.target.value = ''; 
+                };
+            },
+
+            deleteFile: async function(fileId) {
+                const confirm = await window.royalConfirm("حذف ملف", "هل أنت متأكد من حذف هذا الملف من السحابة نهائياً؟");
+                if (confirm) {
+                    try {
+                        await firebase.firestore().collection('cloud_medical_files').doc(fileId).delete();
+                        window.showToast("تم حذف الملف 🗑️");
+                    } catch (error) { console.error(error); }
+                }
+            }
+        };
+
+        // التشغيل التلقائي عند فتح الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+            firebase.auth().onAuthStateChanged((user) => {
+                if(user) { window.cloudFolderEngine.init(); }
+            });
+        });
+    </script>
+</body>
+</html>

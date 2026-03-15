@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>شبكة إنقاذ الحياة</title>
+    
+    <link rel="stylesheet" href="../css/patient_dash.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+    <style>
+        body { margin: 0; padding: 0; background: var(--bg-color, #0a0a0a); min-height: 100vh; overflow-x: hidden; }
+        
+        /* إجبار صفحتك الأصلية على الظهور كصفحة كاملة باستقلالية */
+        #blood-slide {
+            position: relative !important;
+            display: flex !important;
+            flex-direction: column;
+            transform: none !important;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        .slide-header {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            padding-top: calc(env(safe-area-inset-top, 15px) + 15px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        .back-btn { font-size: 28px; cursor: pointer; color: var(--text-main); }
+
+        /* ========================================== */
+        /* 👑 ستايل التنبيهات الملكية المضافة */
+        /* ========================================== */
+        #royal-toast {
+            position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+            background: var(--card-bg, #1e1e1e); color: white; padding: 12px 25px;
+            border-radius: 25px; font-family: 'Cairo'; font-size: 14px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+            z-index: 999999; transition: bottom 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: flex; align-items: center; gap: 10px; white-space: nowrap;
+        }
+
+        .custom-alert-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            display: none; justify-content: center; align-items: center; z-index: 9999999;
+        }
+        .custom-alert-box {
+            background: #111; border: 1px solid var(--border-color);
+            padding: 25px; border-radius: 25px; width: 80%; max-width: 350px;
+            text-align: center; animation: scaleUp 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="top-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; background: var(--red, #ff4b2b); width: 0%; z-index: 999999; transition: width 0.3s ease; display: none; box-shadow: 0 0 10px var(--red);"></div>
+
+    <div id="blood-slide" class="slide-page">
+        <div class="slide-header">
+           <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.goToPage('patient_dash.html')"></ion-icon>
+            <h2 style="margin: 0; font-size: 18px; color: var(--red);" data-i18n="blood_slide_title">شبكة إنقاذ الحياة 🩸</h2>
+        </div>
+        
+        <div style="padding: 20px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+            
+            <button class="hm-btn" style="background: var(--red); color: white; margin-bottom: 20px; box-shadow: 0 0 15px rgba(255,75,43,0.6);" onclick="document.getElementById('blood-form').style.display='block'">
+                <ion-icon name="megaphone-outline"></ion-icon> <span data-i18n="btn_emergency_call">إطلاق نداء استغاثة عاجل</span>
+            </button>
+
+            <div id="blood-form" class="med-form-card" style="border-color: var(--red); display: none;">
+                <h3 style="color: var(--red); margin-top: 0; font-size:16px;" data-i18n="blood_form_title">تفاصيل النداء العاجل:</h3>
+                
+                <select id="blood-type-req" class="hm-input">
+                    <option value="" disabled selected data-i18n="blood_type_placeholder">اختر الزمرة المطلوبة 🩸</option>
+                    <option value="O-" data-i18n="blood_o_neg">O- (سالب - نادر جداً)</option>
+                    <option value="O+" data-i18n="blood_o_pos">O+ (موجب)</option>
+                    <option value="A-" data-i18n="blood_a_neg">A- (سالب)</option>
+                    <option value="A+" data-i18n="blood_a_pos">A+ (موجب)</option>
+                    <option value="B-" data-i18n="blood_b_neg">B- (سالب)</option>
+                    <option value="B+" data-i18n="blood_b_pos">B+ (موجب)</option>
+                    <option value="AB-" data-i18n="blood_ab_neg">AB- (سالب - أندر زمرة)</option>
+                    <option value="AB+" data-i18n="blood_ab_pos">AB+ (موجب)</option>
+                </select>
+
+                <input type="text" id="blood-wilaya" class="hm-input" placeholder="الولاية (مثال: الجزائر، سطيف...)" data-i18n-placeholder="blood_wilaya_ph">
+                <input type="text" id="blood-hospital" class="hm-input" placeholder="اسم المستشفى (مثال: مستشفى مصطفى باشا)" data-i18n-placeholder="blood_hospital_ph">
+                <input type="tel" id="blood-phone" class="hm-input" placeholder="رقم هاتف المرافق للاتصال به" data-i18n-placeholder="blood_phone_ph">
+                
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="hm-btn" style="background: var(--red); color: white; flex: 1; margin:0;" onclick="window.bloodEngine.submitRequest()" data-i18n="btn_save_life">أنقذ حياة 🚀</button>
+                    <button class="hm-btn" style="background: transparent; border: 1px solid var(--text-sub); color: var(--text-sub); flex: 1; margin:0;" onclick="document.getElementById('blood-form').style.display='none'" data-i18n="btn_cancel">إلغاء</button>
+                </div>
+            </div>
+
+            <h3 style="font-size: 15px; margin-top: 10px; color: var(--text-sub);" data-i18n="urgent_cases_title">حالات عاجلة تنتظر تبرعك:</h3>
+            <div id="blood-requests-list" style="display: flex; flex-direction: column; gap: 15px; padding-bottom: 50px;">
+            </div>
+            
+        </div>
+    </div>
+
+    <div id="royal-toast"><ion-icon name="information-circle"></ion-icon> <span id="toast-msg">رسالة...</span></div>
+
+    <div id="royal-alert-overlay" class="custom-alert-overlay">
+        <div class="custom-alert-box">
+            <ion-icon id="alert-icon" name="alert-circle" style="font-size: 50px; margin-bottom: 10px; color: var(--red);"></ion-icon>
+            <h3 id="alert-title" style="margin: 0 0 10px 0; color: white; font-family: 'Cairo';">تنبيه</h3>
+            <p id="alert-msg" style="color: var(--text-sub); font-size: 14px; margin-bottom: 20px; font-family: 'Cairo';"></p>
+            <button class="hm-btn" onclick="document.getElementById('royal-alert-overlay').style.display='none'" style="width: 100%; margin: 0; background: var(--red); color: white; font-weight: bold;">حسناً</button>
+        </div>
+    </div>
+
+    <div id="royal-confirm-overlay" class="custom-alert-overlay">
+        <div class="custom-alert-box">
+            <ion-icon id="confirm-icon" name="help-circle" style="font-size: 50px; margin-bottom: 10px; color: var(--red);"></ion-icon>
+            <h3 id="confirm-title" style="margin: 0 0 10px 0; color: white; font-family: 'Cairo';">تأكيد</h3>
+            <p id="confirm-msg" style="color: var(--text-sub); font-size: 14px; margin-bottom: 20px; font-family: 'Cairo';"></p>
+            <div style="display: flex; gap: 10px;">
+                <button id="confirm-yes-btn" class="hm-btn" style="flex: 1; margin: 0; background: var(--red); color: white;">نعم</button>
+                <button id="confirm-no-btn" class="hm-btn" style="flex: 1; margin: 0; background: transparent; border: 1px solid var(--text-sub); color: var(--text-sub);">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script src="../js/languages.js"></script>
+
+    <script>
+        
+        // 1. تهيئة فايربيس (تأكد من مفاتيحك)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDF6MRRmzfXJBW07Xb_rXVK2hJY_Xtcm6A",
+            authDomain: "healthmate-web-3d983.firebaseapp.com",
+            projectId: "healthmate-web-3d983",
+            storageBucket: "healthmate-web-3d983.firebasestorage.app",
+            appId: "1:1005719156245:web:7478909058de336f1b801c"
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+
+        // ==========================================
+        // 👑 تم استبدال الدوال القديمة بدوال التنبيه الملكي
+        // ==========================================
+        window.showToast = function(msg) {
+            const toast = document.getElementById('royal-toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.style.bottom = '30px';
+            setTimeout(() => { toast.style.bottom = '-100px'; }, 3000);
+        };
+
+        window.royalAlert = function(title, msg, iconName = 'alert-circle', color = 'var(--red)') {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-msg').innerText = msg;
+            document.getElementById('alert-icon').name = iconName;
+            document.getElementById('alert-icon').style.color = color;
+            document.getElementById('royal-alert-overlay').style.display = 'flex';
+        };
+
+        window.royalConfirm = function(title, msg) {
+            return new Promise((resolve) => {
+                document.getElementById('confirm-title').innerText = title;
+                document.getElementById('confirm-msg').innerText = msg;
+                document.getElementById('royal-confirm-overlay').style.display = 'flex';
+                
+                document.getElementById('confirm-yes-btn').onclick = () => {
+                    document.getElementById('royal-confirm-overlay').style.display = 'none';
+                    resolve(true);
+                };
+                
+                document.getElementById('confirm-no-btn').onclick = () => {
+                    document.getElementById('royal-confirm-overlay').style.display = 'none';
+                    resolve(false);
+                };
+            });
+        };
+
+        // 🚀 محرك الانتقال السلس للرجوع
+        window.goToPage = function(pageUrl) {
+            const progressBar = document.getElementById('top-progress-bar');
+            if (progressBar) {
+                progressBar.style.display = 'block';
+                setTimeout(() => { progressBar.style.width = '70%'; }, 10);
+                setTimeout(() => {
+                    progressBar.style.width = '100%';
+                    window.location.href = pageUrl;
+                }, 300);
+            } else {
+                window.location.href = pageUrl;
+            }
+        };
+
+        // 2. الكود الخاص بك حرفياً (بدون أي تغيير في المنطق)
+        window.bloodEngine = {
+            unsubBlood: null, 
+
+            init: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const listDiv = document.getElementById('blood-requests-list');
+
+                if(this.unsubBlood) this.unsubBlood(); 
+
+                listDiv.innerHTML = `<div style="text-align:center; padding:40px; color:#888;"><ion-icon name="sync" style="font-size:40px; animation: spin 1s linear infinite;"></ion-icon><p>${dict.blood_searching || 'جاري البحث عن نداءات عاجلة...'}</p></div>`;
+                
+                this.unsubBlood = window.firebase.firestore().collection('blood_requests')
+                    .orderBy('timestamp', 'desc')
+                    .onSnapshot((snapshot) => {
+                        listDiv.innerHTML = '';
+                        
+                        if (snapshot.empty) {
+                            listDiv.innerHTML = `
+                                <div style="text-align:center; padding:40px; color:var(--green);">
+                                    <ion-icon name="heart-circle-outline" style="font-size:70px;"></ion-icon>
+                                    <p style="font-weight:bold;">${dict.blood_no_cases || 'لا توجد حالات حرجة حالياً.<br>الحمد لله على نعمة الصحة! 🤲'}</p>
+                                </div>`;
+                            return;
+                        }
+
+                        snapshot.forEach(doc => {
+                            const req = doc.data();
+                            const reqId = doc.id;
+                            const myUid = window.firebase.auth().currentUser?.uid;
+                            const isMyRequest = req.requesterId === myUid; 
+
+                            let timeAgo = dict.time_now || 'الآن';
+                            if (req.timestamp) {
+                                const seconds = Math.floor((new Date() - req.timestamp.toDate()) / 1000);
+                                if (seconds < 60) timeAgo = dict.time_seconds_ago || "منذ ثوانٍ";
+                                else if (seconds < 3600) timeAgo = (dict.time_mins_ago || "منذ ${n} دقيقة").replace('${n}', Math.floor(seconds/60));
+                                else if (seconds < 86400) timeAgo = (dict.time_hours_ago || "منذ ${n} ساعة").replace('${n}', Math.floor(seconds/3600));
+                                else timeAgo = (dict.time_days_ago || "منذ ${n} يوم").replace('${n}', Math.floor(seconds/86400));
+                            }
+
+                            listDiv.innerHTML += `
+                                <div class="blood-card">
+                                    <div class="blood-urgent">${dict.blood_urgent || 'عاجل جداً'}</div>
+                                    <div style="display: flex; gap: 15px; align-items: center;">
+                                        <div class="blood-type-badge">${req.bloodType}</div>
+                                        <div class="blood-info" style="flex: 1;">
+                                            <h4>${dict.blood_patient_in || 'مريض في'} ${req.hospital}</h4>
+                                            <p><ion-icon name="location-outline"></ion-icon> ${dict.blood_wilaya || 'الولاية:'} ${req.wilaya}</p>
+                                            <p><ion-icon name="time-outline"></ion-icon> ${timeAgo}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                        <a href="tel:${req.phone}" class="hm-btn" style="margin:0; background:var(--red); color:white; text-decoration:none; display:flex; justify-content:center; align-items:center; gap:5px; flex:2;">
+                                            <ion-icon name="call"></ion-icon> ${dict.blood_call_donate || 'اتصل للتبرع'}
+                                        </a>
+                                        
+                                        ${isMyRequest ? `
+                                        <button class="hm-btn" style="margin:0; background:transparent; border:1px solid var(--green); color:var(--green); flex:1; font-size:12px;" onclick="window.bloodEngine.deleteRequest('${reqId}')">
+                                            <ion-icon name="checkmark-done"></ion-icon> ${dict.blood_donated || 'تم التبرع'}
+                                        </button>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }, (error) => {
+                        console.error(error);
+                        const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                        listDiv.innerHTML = `<p style="color:var(--red); text-align:center;">${dict.blood_fetch_err || 'حدث خطأ في جلب النداءات. تأكد من اتصالك بالإنترنت.'}</p>`;
+                    });
+            },
+
+            submitRequest: async function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const bloodType = document.getElementById('blood-type-req').value;
+                const wilaya = document.getElementById('blood-wilaya').value.trim();
+                const hospital = document.getElementById('blood-hospital').value.trim();
+                const phone = document.getElementById('blood-phone').value.trim();
+                const user = window.firebase.auth().currentUser;
+
+                if (!user) return window.royalAlert(dict.login_req_title || "تسجيل الدخول", dict.blood_login_msg || "يجب إنشاء حساب وإثبات هويتك لإطلاق نداء دم، منعاً للطلبات الوهمية.", "lock-closed", "var(--orange)");
+                if (!bloodType || !wilaya || !hospital || !phone) return window.showToast(dict.fill_all_fields || "⚠️ يرجى تعبئة جميع الحقول!");
+
+                try {
+                    window.showToast(dict.blood_broadcasting || "جاري إرسال النداء لجميع المستخدمين... 📡");
+                    document.getElementById('blood-form').style.display = 'none';
+
+                    await window.firebase.firestore().collection('blood_requests').add({
+                        requesterId: user.uid,
+                        bloodType: bloodType,
+                        wilaya: wilaya,
+                        hospital: hospital,
+                        phone: phone,
+                        timestamp: window.firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    window.royalAlert(dict.blood_sent_title || "تم النشر بنجاح!", dict.blood_sent_msg || "تم إطلاق نداء الاستغاثة بنجاح. نسأل الله الشفاء العاجل للمريض. سيقوم المتبرعون بالاتصال بك قريباً.", "heart", "var(--red)");
+                    
+                    document.getElementById('blood-wilaya').value = '';
+                    document.getElementById('blood-hospital').value = '';
+                    document.getElementById('blood-phone').value = '';
+
+                } catch (e) {
+                    console.error(e);
+                    window.showToast(dict.blood_send_err || "حدث خطأ أثناء الإرسال ❌");
+                }
+            },
+
+            deleteRequest: async function(reqId) {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const confirmRes = await window.royalConfirm(dict.blood_close_req || "إغلاق النداء", dict.blood_close_msg || "هل تم توفير الدم للمريض وتريد حذف هذا النداء من التطبيق؟");
+                if (confirmRes) {
+                    try {
+                        await window.firebase.firestore().collection('blood_requests').doc(reqId).delete();
+                        window.showToast(dict.blood_closed_success || "تم إغلاق النداء. بارك الله في المتبرعين! 🤲");
+                    } catch (e) { console.error(e); }
+                }
+            }
+        };
+
+        // 3. تشغيل المحرك فوراً عند فتح الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+            firebase.auth().onAuthStateChanged((user) => {
+                if(user) {
+                    window.bloodEngine.init();
+                } else {
+                    document.getElementById('blood-requests-list').innerHTML = `<p style="text-align:center; color:var(--orange);">يجب تسجيل الدخول لرؤية النداءات 🔒</p>`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

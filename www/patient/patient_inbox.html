@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>رسائلي والاستشارات</title>
+    
+    <link rel="stylesheet" href="../css/patient_dash.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+    <style>
+        body { margin: 0; padding: 0; background: var(--bg-color, #0a0a0a); min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; }
+        
+        /* إجبار الواجهات على العمل باستقلالية */
+        .slide-page { position: relative !important; transform: none !important; height: 100vh; z-index: 1; flex-direction: column; }
+        
+        .slide-header {
+            background: var(--card-bg); padding: 15px 20px; padding-top: calc(env(safe-area-inset-top, 15px) + 15px);
+            display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 10; position: sticky; top: 0;
+        }
+        .back-btn { font-size: 28px; cursor: pointer; color: var(--text-main); }
+
+        /* نظام التنبيهات الملكي (Toast & Alerts) */
+        #royal-toast {
+            position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+            background: var(--card-bg, #1e1e1e); color: white; padding: 12px 25px; border-radius: 25px; font-family: 'Cairo'; font-size: 14px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); z-index: 999999; transition: bottom 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: flex; align-items: center; gap: 10px; white-space: nowrap;
+        }
+        .custom-alert-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            display: none; justify-content: center; align-items: center; z-index: 9999999;
+        }
+        .custom-alert-box {
+            background: #111; border: 1px solid var(--border-color); padding: 25px; border-radius: 25px; width: 80%; max-width: 350px;
+            text-align: center; animation: scaleUp 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="top-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; background: var(--teal, #4fd1c5); width: 0%; z-index: 999999; transition: width 0.3s ease; display: none; box-shadow: 0 0 10px var(--teal);"></div>
+
+    <div id="chat-slide" class="slide-page" style="display: flex;">
+        <div class="slide-header">
+           <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.goToPage('patient_dash.html')"></ion-icon>
+            <h2 style="margin: 0; font-size: 18px;" data-i18n="chat_slide_title">رسائلي والاستشارات 💬</h2>
+        </div>
+
+        <div style="padding: 20px; flex: 1; overflow-y: auto;">
+            <div id="patient-inbox-container">
+                <div style="text-align:center; padding:30px;"><ion-icon name="sync" style="animation: spin 1s infinite; font-size:30px; color:var(--teal);"></ion-icon></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="patient-chat-room" class="slide-page" style="display: none; background: var(--bg-color);">
+        
+        <div class="slide-header" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.PatientChatSystem.closeChat()"></ion-icon>
+                <img id="p-chat-avatar" src="../assets/img/profile.png" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--blue);">
+                <div>
+                    <h3 id="p-chat-name" style="margin: 0; font-size: 15px; color: white;">د. الطبيب</h3>
+                    <small id="p-chat-status" style="color: var(--blue); font-size: 11px;">متصل</small>
+                </div>
+            </div>
+
+            <button id="p-chat-access-btn" onclick="window.PatientChatSystem.toggleMedicalAccess()" style="background: var(--purple); color: white; border: none; padding: 5px 10px; border-radius: 8px; font-size: 11px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <ion-icon name="lock-closed" id="p-access-icon"></ion-icon> 
+                <span id="p-access-text">مشاركة ملفي</span>
+            </button>
+        </div>
+
+        <div id="p-chat-messages" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #0a0a0a;">
+        </div>
+
+        <div style="padding: 10px; background: #111; display: flex; gap: 10px; align-items: center; border-top: 1px solid #333;">
+            <button onclick="document.getElementById('p-chat-file-upload').click()" style="background: transparent; color: var(--blue); border: none; font-size: 24px; cursor: pointer;">
+                <ion-icon name="attach-outline"></ion-icon>
+            </button>
+            <input type="file" id="p-chat-file-upload" accept="image/*" style="display: none;" onchange="window.PatientChatSystem.uploadMedia(event)">
+            
+            <input type="text" id="p-chat-input" placeholder="اكتب رسالتك للطبيب..." style="flex: 1; background: #222; border: none; padding: 12px; border-radius: 20px; color: white; outline: none; font-family: 'Cairo';" data-i18n-placeholder="chat_input_ph" onkeypress="if(event.key === 'Enter') window.PatientChatSystem.sendMessage()">
+            
+            <button onclick="window.PatientChatSystem.sendMessage()" style="background: var(--blue); border: none; width: 40px; height: 40px; border-radius: 50%; color: black; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+                <ion-icon name="send" style="font-size: 18px; margin-right: 2px; transform: rotate(180deg);"></ion-icon>
+            </button>
+        </div>
+    </div>
+
+    <div id="royal-toast"><ion-icon name="information-circle"></ion-icon> <span id="toast-msg">رسالة...</span></div>
+
+    <div id="royal-alert-overlay" class="custom-alert-overlay">
+        <div class="custom-alert-box">
+            <ion-icon id="alert-icon" name="alert-circle" style="font-size: 50px; margin-bottom: 10px;"></ion-icon>
+            <h3 id="alert-title" style="margin: 0 0 10px 0; color: white; font-family: 'Cairo';">تنبيه</h3>
+            <p id="alert-msg" style="color: var(--text-sub); font-size: 14px; margin-bottom: 20px; font-family: 'Cairo';"></p>
+            <button class="hm-btn" onclick="document.getElementById('royal-alert-overlay').style.display='none'" style="width: 100%; margin: 0; background: var(--blue); color: black; font-weight: bold;">حسناً</button>
+        </div>
+    </div>
+
+    <div id="media-viewer-modal" class="custom-alert-overlay" style="flex-direction: column;">
+        <div style="width: 100%; padding: 20px; text-align: left; box-sizing: border-box;">
+            <ion-icon name="close-circle" style="color: white; font-size: 35px; cursor: pointer;" onclick="document.getElementById('media-viewer-modal').style.display='none'"></ion-icon>
+        </div>
+        <img id="media-viewer-img" src="" style="max-width: 95%; max-height: 80vh; object-fit: contain; border-radius: 15px;">
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="../js/languages.js"></script>
+
+    <script>
+        
+        // 1. تهيئة فايربيس
+        const firebaseConfig = {
+            apiKey: "AIzaSyDF6MRRmzfXJBW07Xb_rXVK2hJY_Xtcm6A",
+            authDomain: "healthmate-web-3d983.firebaseapp.com",
+            projectId: "healthmate-web-3d983",
+            storageBucket: "healthmate-web-3d983.firebasestorage.app",
+            appId: "1:1005719156245:web:7478909058de336f1b801c"
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+
+        // 2. دوال مساعدة ملكية
+        window.showToast = function(msg) {
+            const toast = document.getElementById('royal-toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.style.bottom = '30px';
+            setTimeout(() => { toast.style.bottom = '-100px'; }, 3000);
+        };
+        window.royalAlert = function(title, msg, iconName = 'alert-circle', color = 'var(--blue)') {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-msg').innerText = msg;
+            document.getElementById('alert-icon').name = iconName;
+            document.getElementById('alert-icon').style.color = color;
+            document.getElementById('royal-alert-overlay').style.display = 'flex';
+        };
+        window.openMediaViewer = function(imgUrl) {
+            document.getElementById('media-viewer-img').src = imgUrl;
+            document.getElementById('media-viewer-modal').style.display = 'flex';
+        };
+         // 🚀 محرك الانتقال السلس للرجوع
+window.goToPage = function(pageUrl) {
+    const progressBar = document.getElementById('top-progress-bar');
+    if (progressBar) {
+        progressBar.style.display = 'block';
+        setTimeout(() => { progressBar.style.width = '70%'; }, 10);
+        setTimeout(() => {
+            progressBar.style.width = '100%';
+            window.location.href = pageUrl;
+        }, 300);
+    } else {
+        window.location.href = pageUrl;
+    }
+};
+        // 3. محرك صندوق الوارد (لجلب قائمة الأطباء الذين راسلتهم)
+        window.patientInboxManager = {
+            loadConsultations: function() {
+                const user = firebase.auth().currentUser;
+                if (!user) return;
+
+                const myUid = user.uid;
+                const container = document.getElementById('patient-inbox-container');
+                
+                firebase.firestore().collection("chats")
+                    .where("participants", "array-contains", myUid)
+                    .onSnapshot(snap => {
+                        container.innerHTML = "";
+                        if (snap.empty) {
+                            container.innerHTML = `<div style="text-align:center; padding:50px; color:#888;"><ion-icon name="chatbubbles-outline" style="font-size:50px; opacity:0.3;"></ion-icon><p>لا توجد رسائل حالياً</p></div>`;
+                            return;
+                        }
+
+                        let chatsArray = [];
+                        snap.forEach(doc => {
+                            let data = doc.data();
+                            data.docId = doc.id;
+                            chatsArray.push(data);
+                        });
+
+                        chatsArray.sort((a, b) => (b.lastMessageTime || 0) - (a.lastMessageTime || 0));
+
+                        chatsArray.forEach(async chat => {
+                            const otherId = chat.participants.find(id => id !== myUid);
+                            
+                            // جلب بيانات الطبيب الحقيقية من فايربيس
+                            let doctorName = "طبيب";
+                            let doctorImg = "../assets/img/profile.png";
+                            try {
+                                const docSnap = await firebase.firestore().collection('users').doc(otherId).get();
+                                if(docSnap.exists) {
+                                    doctorName = docSnap.data().name || doctorName;
+                                    doctorImg = docSnap.data().photoURL || doctorImg;
+                                }
+                            } catch(e) {}
+
+                            container.innerHTML += `
+                                <div class="inbox-card" onclick="window.PatientChatSystem.openRoom('${otherId}', '${doctorName}', '${doctorImg}')">
+                                    <img src="${doctorImg}" class="inbox-avatar" style="border: 2px solid var(--teal);">
+                                    <div class="inbox-info">
+                                        <div class="inbox-header">
+                                            <strong style="color: white; font-size: 15px;">د. ${doctorName}</strong>
+                                            <span class="inbox-time" style="font-size:12px; color: ${chat.medicalAccess ? 'var(--green)' : 'var(--red)'};">${chat.medicalAccess ? '🔓 ملف مكشوف' : '🔒 ملف محمي'}</span>
+                                        </div>
+                                        <p class="inbox-last-msg" style="margin:0; color:#888; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${chat.lastMessage || 'اضغط لبدء المحادثة'}</p>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }, err => {
+                        console.error("خطأ الإنبوكس:", err);
+                    });
+            }
+        };
+
+        // 4. محرك الدردشة الداخلي (الأسطوري)
+        window.PatientChatSystem = {
+            activeChatId: null,
+            listener: null,
+            accessListener: null,
+
+            openRoom: async function(doctorUid, doctorName, doctorImg) {
+                const myUid = firebase.auth().currentUser.uid;
+                this.activeChatId = myUid < doctorUid ? `${myUid}_${doctorUid}` : `${doctorUid}_${myUid}`;
+
+                document.getElementById('p-chat-name').innerText = "د. " + doctorName;
+                document.getElementById('p-chat-avatar').src = doctorImg || '../assets/img/profile.png';
+                
+                // التبديل بين الواجهتين داخلياً
+                document.getElementById('chat-slide').style.display = 'none';
+                document.getElementById('patient-chat-room').style.display = 'flex';
+
+                const chatRef = firebase.firestore().collection("chats").doc(this.activeChatId);
+                const doc = await chatRef.get();
+                if (!doc.exists) {
+                    await chatRef.set({
+                        participants: [myUid, doctorUid],
+                        medicalAccess: false,
+                        lastMessage: "تم بدء محادثة جديدة...",
+                        lastMessageTime: Date.now(),
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                this.listenToMessages(myUid);
+                this.watchPrivacyToggle();
+            },
+
+            closeChat: function() {
+                if(this.listener) this.listener(); 
+                if(this.accessListener) this.accessListener(); 
+                this.activeChatId = null;
+                // العودة للإنبوكس
+                document.getElementById('patient-chat-room').style.display = 'none';
+                document.getElementById('chat-slide').style.display = 'flex';
+            },
+
+            sendMessage: async function() {
+                if(!this.activeChatId) return;
+                const input = document.getElementById('p-chat-input');
+                const text = input.value.trim();
+                if(text === "") return;
+
+                input.value = ""; 
+
+                const msgData = {
+                    senderId: firebase.auth().currentUser.uid,
+                    text: text,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    await firebase.firestore().collection("chats").doc(this.activeChatId).collection("messages").add(msgData);
+                    await firebase.firestore().collection("chats").doc(this.activeChatId).update({
+                        lastMessage: text,
+                        lastMessageTime: Date.now(),
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } catch (error) { window.showToast("لم يتم الإرسال ❌"); }
+            },
+
+            uploadMedia: async function(event) {
+                if(!this.activeChatId) return;
+                const file = event.target.files[0];
+                if (!file) return;
+
+                window.showToast("جاري تشفير ورفع الصورة... 🚀");
+                
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async (e) => {
+                    const base64Img = e.target.result;
+                    try {
+                        const msgData = {
+                            senderId: firebase.auth().currentUser.uid,
+                            text: "", 
+                            mediaUrl: base64Img, 
+                            mediaType: file.type.startsWith('image') ? 'image' : 'document',
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+
+                        await firebase.firestore().collection("chats").doc(this.activeChatId).collection("messages").add(msgData);
+                        await firebase.firestore().collection("chats").doc(this.activeChatId).update({
+                            lastMessage: "صورة / مرفق 📁",
+                            lastMessageTime: Date.now(),
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        window.showToast("تم إرسال الصورة بنجاح! ✅");
+                    } catch (error) { window.royalAlert("خطأ", "فشل الرفع، الصورة كبيرة جداً", "warning", "var(--red)"); }
+                    event.target.value = ''; 
+                };
+            },
+
+            listenToMessages: function(myUid) {
+                const area = document.getElementById('p-chat-messages');
+                area.innerHTML = `<p style="text-align:center; color:#888;">جاري تحميل المحادثة...</p>`;
+
+                this.listener = firebase.firestore().collection("chats").doc(this.activeChatId).collection("messages")
+                    .orderBy("timestamp", "asc")
+                    .onSnapshot(snap => {
+                        area.innerHTML = "";
+                        snap.forEach(doc => {
+                            const msg = doc.data();
+                            const isMe = msg.senderId === myUid;
+                            const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}) : 'الآن';
+
+                            let mediaHtml = '';
+                            if(msg.mediaUrl) {
+                                mediaHtml = `<img src="${msg.mediaUrl}" style="max-width:100%; border-radius:10px; margin-bottom:5px; cursor:pointer; border: 1px solid rgba(255,255,255,0.1);" onclick="window.openMediaViewer('${msg.mediaUrl}')">`;
+                            }
+
+                            area.innerHTML += `
+                                <div style="align-self: ${isMe ? 'flex-end' : 'flex-start'}; max-width: 75%; background: ${isMe ? 'var(--blue)' : '#222'}; color: ${isMe ? '#000' : '#fff'}; padding: 10px 15px; border-radius: ${isMe ? '15px 15px 0 15px' : '15px 15px 15px 0'}; position: relative;">
+                                    ${mediaHtml}
+                                    <div style="font-size: 14px; line-height: 1.5; word-wrap: break-word;">${msg.text || ''}</div>
+                                    <div style="font-size: 10px; text-align: ${isMe ? 'left' : 'right'}; opacity: 0.7; margin-top: 5px;">${time}</div>
+                                </div>
+                            `;
+                        });
+                        setTimeout(() => { area.scrollTop = area.scrollHeight; }, 100);
+                    });
+            },
+
+            watchPrivacyToggle: function() {
+                const btn = document.getElementById('p-chat-access-btn');
+                const icon = document.getElementById('p-access-icon');
+                const text = document.getElementById('p-access-text');
+
+                this.accessListener = firebase.firestore().collection("chats").doc(this.activeChatId).onSnapshot(doc => {
+                    if(!doc.exists) return;
+                    const hasAccess = doc.data().medicalAccess === true;
+                    
+                    if(hasAccess) {
+                        btn.style.background = "var(--red)";
+                        icon.name = "lock-open";
+                        text.innerText = "إلغاء مشاركة الملف";
+                    } else {
+                        btn.style.background = "var(--purple)";
+                        icon.name = "lock-closed";
+                        text.innerText = "مشاركة ملفي";
+                    }
+                });
+            },
+
+            toggleMedicalAccess: async function() {
+                if(!this.activeChatId) return;
+                const chatRef = firebase.firestore().collection("chats").doc(this.activeChatId);
+                const doc = await chatRef.get();
+                const current = doc.data().medicalAccess === true;
+                
+                await chatRef.update({ medicalAccess: !current });
+                window.showToast(!current ? "تم منح الطبيب صلاحية الدخول لملفك ✅" : "تم سحب الصلاحية 🔒");
+            }
+        };
+
+        // 5. التشغيل التلقائي عند فتح الصفحة واستقبال النقل من صفحة الأطباء 🎯
+        document.addEventListener('DOMContentLoaded', () => {
+            firebase.auth().onAuthStateChanged((user) => {
+                if(user) {
+                    // التحقق من الذاكرة (هل ضغط المريض على 'مراسلة' من صفحة الأطباء؟)
+                    const targetUid = localStorage.getItem('chat_target_uid');
+                    
+                    if (targetUid) {
+                        // جلب باقي البيانات وفتح الغرفة مباشرة!
+                        const targetName = localStorage.getItem('chat_target_name') || 'طبيب';
+                        const targetImg = localStorage.getItem('chat_target_img') || '../assets/img/profile.png';
+                        
+                        window.PatientChatSystem.openRoom(targetUid, targetName, targetImg);
+                        
+                        // مسح الذاكرة لكي لا يفتحها تلقائياً المرة القادمة
+                        localStorage.removeItem('chat_target_uid');
+                        localStorage.removeItem('chat_target_name');
+                        localStorage.removeItem('chat_target_img');
+                        
+                        // مع ذلك، نُحمّل الإنبوكس في الخلفية استعداداً لو ضغط رجوع
+                        window.patientInboxManager.loadConsultations();
+                    } else {
+                        // المستخدم فتح الصفحة بشكل طبيعي، نعرض الإنبوكس
+                        window.patientInboxManager.loadConsultations();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

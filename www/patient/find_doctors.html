@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>البحث عن طبيب</title>
+    
+    <link rel="stylesheet" href="../css/patient_dash.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+    <style>
+        body { margin: 0; padding: 0; background: var(--bg-color, #0a0a0a); min-height: 100vh; overflow-x: hidden; }
+        
+        /* إجبار صفحتك الأصلية على الظهور كصفحة كاملة بدلاً من سلايد مخفي */
+        #find-docs-slide {
+            position: relative !important;
+            display: block !important;
+            transform: none !important;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="top-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; background: var(--blue, #00f3ff); width: 0%; z-index: 999999; transition: width 0.3s ease; display: none; box-shadow: 0 0 10px var(--blue);"></div>
+
+    <div id="find-docs-slide" class="slide-page">
+        <div class="slide-header">
+            <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.goToPage('patient_dash.html')"></ion-icon>
+            <h2 style="margin: 0; font-size: 18px;" data-i18n="find_docs_title">البحث عن أطباء 🔍</h2>
+        </div>
+        
+        <div style="padding: 20px;">
+            
+            <div class="search-container">
+                <ion-icon name="search" class="search-icon"></ion-icon>
+                <input type="text" id="doc-search-input" placeholder="ابحث عن اسم طبيب..." onkeyup="window.findDocsEngine.handleSearch()" data-i18n-placeholder="find_docs_ph">
+                <div id="search-autocomplete" class="autocomplete-box"></div>
+            </div>
+
+            <div class="specialty-scroll" id="specialty-filters">
+                <div class="spec-pill active" onclick="window.findDocsEngine.filterSpec('all', this)" data-i18n="spec_all">الكل 🌍</div>
+                <div class="spec-pill" onclick="window.findDocsEngine.filterSpec('أسنان', this)" data-i18n="spec_dental">أسنان 🦷</div>
+                <div class="spec-pill" onclick="window.findDocsEngine.filterSpec('قلب', this)" data-i18n="spec_heart">قلب ❤️</div>
+                <div class="spec-pill" onclick="window.findDocsEngine.filterSpec('عيون', this)" data-i18n="spec_eyes">عيون 👁️</div>
+                <div class="spec-pill" onclick="window.findDocsEngine.filterSpec('عظام', this)" data-i18n="spec_bones">عظام 🦴</div>
+                <div class="spec-pill" onclick="window.findDocsEngine.filterSpec('أطفال', this)" data-i18n="spec_kids">أطفال 👶</div>
+                <div class="spec-pill" onclick="window.findDocsEngine.filterSpec('نفسي', this)" data-i18n="spec_neuro">نفسي 🧠</div>
+            </div>
+
+            <div id="doctors-list" class="doctors-grid">
+                <div style="text-align:center; width:100%; color:#888; margin-top:30px;">
+                    <ion-icon name="sync" style="font-size:40px; animation: spin 1s linear infinite; color:var(--blue);"></ion-icon>
+                    <p data-i18n="find_docs_loading">جاري جلب قائمة الأطباء من السحابة...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="doctor-profile-modal" class="glass-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); z-index: 100000; justify-content: center; align-items: flex-end; padding-bottom: 0;">
+        
+        <div class="doc-profile-card" style="background: #111; border-top: 2px solid var(--blue); width: 100%; max-width: 500px; height: 85vh; border-radius: 35px 35px 0 0; display: flex; flex-direction: column; overflow: hidden; animation: slideUp 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);">
+            
+            <div style="text-align: center; padding: 15px; cursor: pointer;" onclick="document.getElementById('doctor-profile-modal').style.display='none'">
+                <div style="width: 50px; height: 5px; background: #333; border-radius: 10px; margin: 0 auto;"></div>
+            </div>
+
+            <div style="padding: 0 25px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <div class="doc-avatar-large-wrap">
+                    <img id="dp-img" src="../assets/img/profile.png" class="doc-avatar-large">
+                    <div class="status-dot online"></div>
+                </div>
+                <h2 id="dp-name" style="margin: 10px 0 5px; color: white;">د. اسم الطبيب</h2>
+                <span id="dp-spec" class="spec-badge">تخصص الطبيب</span>
+                <p id="dp-bio" style="color: #aaa; font-size: 13px; line-height: 1.6; margin-top: 15px;">نبذة عن الطبيب تظهر هنا...</p>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="action-btn chat-btn" onclick="window.findDocsEngine.startChat()" data-i18n="btn_msg_doc">
+                        <ion-icon name="chatbubble-ellipses"></ion-icon> مراسلة
+                    </button>
+                   <button class="action-btn book-btn" onclick="window.findDocsEngine.openBookingModal()" data-i18n="btn_book_doc">
+                        <ion-icon name="calendar"></ion-icon> حجز موعد
+                    </button>
+                </div>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; padding: 20px 25px;">
+                
+                <div id="patient-view-doc-info" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; margin-bottom: 25px; text-align: right; display: none;">
+                    <h4 style="color: var(--blue); margin-top: 0; margin-bottom: 15px; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;" data-i18n="clinic_info_title">
+                        معلومات العيادة 🏥
+                    </h4>
+                    
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; color:white; font-size: 13px;">
+                        <ion-icon name="call" style="color:var(--blue); font-size:18px;"></ion-icon> 
+                        <strong data-i18n="lbl_phone">الهاتف:</strong> <span id="v-doc-phone" dir="ltr" style="color: #aaa;">--</span>
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; color:white; font-size: 13px;">
+                        <ion-icon name="time" style="color:var(--blue); font-size:18px;"></ion-icon> 
+                        <strong data-i18n="lbl_hours">ساعات العمل:</strong> <span id="v-doc-hours" style="color: #aaa;">--</span>
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; color:white; font-size: 13px;">
+                        <ion-icon name="location" style="color:var(--blue); font-size:18px;"></ion-icon> 
+                        <strong data-i18n="lbl_location">العنوان:</strong> <span id="v-doc-location" style="color: #aaa;">--</span>
+                    </div>
+
+                    <button id="v-doc-map-btn" style="background: rgba(0, 210, 255, 0.1); color: var(--blue); border: 1px solid var(--blue); width: 100%; border-radius: 10px; padding: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; font-family: 'Cairo';" data-i18n="btn_show_map">
+                        <ion-icon name="navigate" style="font-size: 18px;"></ion-icon> عرض الموقع على الخريطة
+                    </button>
+                </div>
+                <h3 style="margin-top:0; color:var(--blue); font-size: 16px;" data-i18n="latest_posts_title">أحدث المنشورات 📝</h3>
+                <div id="dp-posts-list">
+                    <p style="text-align: center; color: #666; font-size: 13px;" data-i18n="loading_posts">جاري جلب المنشورات...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="booking-modal" class="glass-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); z-index: 100001; justify-content: center; align-items: center;">
+        
+        <div class="royal-modal" style="background: #111; border: 1px solid rgba(0, 210, 255, 0.3); padding: 30px; border-radius: 25px; width: 85%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); animation: scaleUp 0.3s ease;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: var(--blue); margin: 0; font-size: 18px;" data-i18n="booking_title">📅 طلب موعد جديد</h3>
+                <ion-icon name="close-circle" style="font-size: 28px; color: #555; cursor: pointer;" onclick="document.getElementById('booking-modal').style.display='none'"></ion-icon>
+            </div>
+            
+            <p style="color: white; margin-bottom: 15px; font-size: 14px;"><span data-i18n="booking_with">طلب حجز مع:</span> <strong id="book-doc-name" style="color: var(--orange);">--</strong></p>
+
+            <label style="color: #aaa; font-size: 13px;" data-i18n="booking_date">تاريخ الموعد:</label>
+            <input type="date" id="book-date" class="med-input" style="margin-bottom: 15px; cursor: pointer;">
+            
+            <label style="color: #aaa; font-size: 13px;" data-i18n="booking_time">الوقت المفضل:</label>
+            <input type="time" id="book-time" class="med-input" style="margin-bottom: 15px; cursor: pointer;">
+            
+            <label style="color: #aaa; font-size: 13px;" data-i18n="booking_notes">ملاحظات للطبيب (اختياري):</label>
+            <textarea id="book-notes" class="med-input" rows="3" placeholder="مثال: أعاني من ألم في المفاصل منذ أسبوع..." style="margin-bottom: 20px; resize: none;" data-i18n-placeholder="booking_notes_ph"></textarea>
+
+            <button id="submit-booking-btn" class="save-med-btn" style="background: var(--blue); color: black; width: 100%;" onclick="window.findDocsEngine.submitBooking()" data-i18n="booking_submit">تأكيد وإرسال الطلب ✔️</button>
+        </div>
+    </div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script src="../js/languages.js"></script> 
+   <script>
+        
+        // 1. تهيئة الفايربيس للصفحة المستقلة (انسخ مفاتيحك هنا إذا لم تكن تعمل)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDF6MRRmzfXJBW07Xb_rXVK2hJY_Xtcm6A",
+            authDomain: "healthmate-web-3d983.firebaseapp.com",
+            projectId: "healthmate-web-3d983",
+            storageBucket: "healthmate-web-3d983.firebasestorage.app",
+            appId: "1:1005719156245:web:7478909058de336f1b801c"
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+
+        // 🚀 محرك الانتقال السلس للرجوع
+        window.goToPage = function(pageUrl) {
+            const progressBar = document.getElementById('top-progress-bar');
+            if (progressBar) {
+                progressBar.style.display = 'block';
+                setTimeout(() => { progressBar.style.width = '70%'; }, 10);
+                setTimeout(() => {
+                    progressBar.style.width = '100%';
+                    window.location.href = pageUrl;
+                }, 300);
+            } else {
+                window.location.href = pageUrl;
+            }
+        };
+
+        // 🌟 دالة إظهار التنبيهات الملكية (بديل الـ alert الغبي)
+        window.showToast = function(msg, duration = 3000) {
+            let toast = document.getElementById('royal-find-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'royal-find-toast';
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: -80px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(10, 10, 10, 0.85);
+                    backdrop-filter: blur(12px);
+                    color: white;
+                    padding: 12px 25px;
+                    border-radius: 50px;
+                    font-family: 'Cairo', sans-serif;
+                    font-size: 14px;
+                    font-weight: bold;
+                    box-shadow: 0 10px 25px rgba(0, 243, 255, 0.3);
+                    border: 1px solid rgba(0, 243, 255, 0.2);
+                    z-index: 9999999;
+                    transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s;
+                    opacity: 0;
+                    white-space: nowrap;
+                    pointer-events: none;
+                `;
+                document.body.appendChild(toast);
+            }
+            toast.innerHTML = msg;
+            
+            setTimeout(() => {
+                toast.style.bottom = '40px';
+                toast.style.opacity = '1';
+            }, 10);
+
+            clearTimeout(window.toastTimeout);
+            window.toastTimeout = setTimeout(() => {
+                toast.style.bottom = '-80px';
+                toast.style.opacity = '0';
+            }, duration);
+        };
+
+        // 2. المحرك الرئيسي
+        window.findDocsEngine = {
+            allDoctors: [], 
+            currentDoctorSelected: null, 
+
+            init: async function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const listDiv = document.getElementById('doctors-list');
+                
+                // جلب الأطباء من الكاش أولاً للسرعة القصوى
+                try {
+                    const fetchOptions = navigator.onLine ? 'default' : 'cache';
+                    let snapshot;
+                    try {
+                        snapshot = await firebase.firestore().collection("users").where("role", "==", "doctor").get({ source: fetchOptions });
+                    } catch(e) {
+                        snapshot = await firebase.firestore().collection("users").where("role", "==", "doctor").get({ source: 'cache' });
+                    }
+
+                    this.allDoctors = []; 
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        this.allDoctors.push({
+                            id: doc.id,
+                            name: data.name || "طبيب غير معروف",
+                            specialty: data.specialty || "عام",
+                            bio: data.bio || "طبيب مسجل في منصة هيلث ميت.",
+                            photoURL: data.photoURL || "../assets/img/profile.png",
+                            latitude: data.latitude, 
+                            longitude: data.longitude
+                        });
+                    });
+                    this.renderDoctors(this.allDoctors); 
+                } catch (error) {
+                    if(listDiv) listDiv.innerHTML = `<p style="text-align:center; color:var(--red); font-weight:bold;">حدث خطأ في جلب البيانات! 🚫</p>`;
+                }
+            },
+
+            renderDoctors: function(doctorsArray) {
+                const listDiv = document.getElementById('doctors-list');
+                if(!listDiv) return;
+                listDiv.innerHTML = ''; 
+
+                if(doctorsArray.length === 0) {
+                    listDiv.innerHTML = `<p style="text-align:center; color:#888; margin-top:30px;">لم نجد أطباء يطابقون بحثك 🕵️‍♂️</p>`;
+                    return;
+                }
+
+                doctorsArray.forEach(doc => {
+                    listDiv.innerHTML += `
+                        <div class="doc-card" onclick="window.findDocsEngine.openProfile('${doc.id}')" style="cursor: pointer; background: var(--card-bg); padding: 15px; border-radius: 15px; display: flex; align-items: center; gap: 15px; border: 1px solid rgba(255,255,255,0.05);">
+                            <img src="${doc.photoURL}" class="doc-avatar" loading="lazy" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--blue);">
+                            <div class="doc-info" style="flex: 1;">
+                                <h4 style="margin: 0; color: white; font-size: 16px;">${doc.name}</h4>
+                                <span class="spec-badge" style="background: rgba(0,210,255,0.1); color: var(--blue); padding: 3px 10px; border-radius: 10px; font-size: 12px; margin-top: 5px; display: inline-block;">${doc.specialty}</span>
+                            </div>
+                            <ion-icon name="chevron-back-outline" style="color: #666; font-size: 20px;"></ion-icon>
+                        </div>
+                    `;
+                });
+            },
+
+            filterSpec: function(specName, btnElement) {
+                document.querySelectorAll('.spec-pill').forEach(btn => btn.classList.remove('active'));
+                btnElement.classList.add('active');
+                document.getElementById('doc-search-input').value = '';
+                document.getElementById('search-autocomplete').style.display = 'none';
+
+                if (specName === 'all') {
+                    this.renderDoctors(this.allDoctors);
+                } else {
+                    const filtered = this.allDoctors.filter(doc => doc.specialty && doc.specialty.includes(specName));
+                    this.renderDoctors(filtered);
+                }
+            },
+
+            handleSearch: function() {
+                const query = document.getElementById('doc-search-input').value.trim().toLowerCase();
+                const autoBox = document.getElementById('search-autocomplete');
+                document.querySelectorAll('.spec-pill').forEach(b => b.classList.remove('active'));
+                
+                if (query === '') {
+                    autoBox.style.display = 'none';
+                    this.renderDoctors(this.allDoctors);
+                    return;
+                }
+
+                const filtered = this.allDoctors.filter(doc => 
+                    (doc.name && doc.name.toLowerCase().includes(query)) || 
+                    (doc.specialty && doc.specialty.toLowerCase().includes(query))
+                );
+
+                this.renderDoctors(filtered);
+
+                if (filtered.length > 0) {
+                    autoBox.innerHTML = '';
+                    filtered.slice(0, 4).forEach(doc => {
+                        autoBox.innerHTML += `
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer;" onclick="window.findDocsEngine.selectFromAuto('${doc.id}')">
+                                <img src="${doc.photoURL}" style="width: 40px; height: 40px; border-radius: 50%;">
+                                <div>
+                                    <div style="color: white; font-size: 14px;">${doc.name}</div>
+                                    <div style="color: var(--blue); font-size: 11px;">${doc.specialty}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    autoBox.style.display = 'block';
+                } else {
+                    autoBox.style.display = 'none';
+                }
+            },
+
+            selectFromAuto: function(docId) {
+                document.getElementById('search-autocomplete').style.display = 'none';
+                this.openProfile(docId); 
+            },
+
+            // 5. قسم البروفايل الخاص بالطبيب
+            // 5. قسم البروفايل الخاص بالطبيب
+            openProfile: async function(docId) {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const docData = this.allDoctors.find(d => d.id === docId);
+                if(!docData) return;
+
+                this.currentDoctorSelected = docData; 
+
+                document.getElementById('dp-img').src = docData.photoURL || '../assets/img/profile.png';
+                document.getElementById('dp-name').innerText = docData.name;
+                document.getElementById('dp-spec').innerText = docData.specialty;
+                document.getElementById('dp-bio').innerText = docData.bio || (dict.fetching_clinic_details || 'جاري جلب تفاصيل العيادة...');
+
+                document.getElementById('doctor-profile-modal').style.display = 'flex';
+
+                try {
+                    const docRef = await firebase.firestore().collection('users').doc(docId).get();
+                    if(docRef.exists) {
+                        const liveData = docRef.data();
+                        if(liveData.bio) document.getElementById('dp-bio').innerText = liveData.bio;
+                        const infoCard = document.getElementById('patient-view-doc-info');
+                        if(infoCard) infoCard.style.display = 'block';
+
+                        if(document.getElementById('v-doc-phone')) {
+                            document.getElementById('v-doc-phone').innerText = liveData.phone || (dict.not_available || "غير متوفر");
+                        }
+                        if(document.getElementById('v-doc-hours')) {
+                            document.getElementById('v-doc-hours').innerText = liveData.workingHours || (dict.unspecified || "غير محدد");
+                        }
+                        if(document.getElementById('v-doc-location')) {
+                            document.getElementById('v-doc-location').innerText = liveData.locationLink || liveData.location || (dict.no_address_written || "لم يتم كتابة العنوان");
+                        }
+
+                        const mapBtn = document.getElementById('v-doc-map-btn');
+                        if (mapBtn) {
+                            if (liveData.latitude && liveData.longitude) {
+                                mapBtn.style.display = "flex"; 
+                                
+                                // 🚨 التعديل السحري هنا: النقل لصفحة الرادار مع الإحداثيات
+                                mapBtn.onclick = () => {
+                                    document.getElementById('doctor-profile-modal').style.display = 'none';
+                                    
+                                    // 1. حفظ الإحداثيات في الذاكرة لتلتقطها صفحة الرادار
+                                    localStorage.setItem('target_radar_lat', liveData.latitude);
+                                    localStorage.setItem('target_radar_lng', liveData.longitude);
+                                    
+                                    // 2. الانتقال السلس لصفحة الرادار
+                                    const progressBar = document.getElementById('top-progress-bar');
+                                    if(progressBar) {
+                                        progressBar.style.display = 'block';
+                                        setTimeout(() => { progressBar.style.width = '70%'; }, 10);
+                                    }
+                                    setTimeout(() => { window.location.href = 'health_radar.html'; }, 300);
+                                };
+
+                            } else {
+                                mapBtn.style.display = "none";
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error("خطأ في جلب تفاصيل العيادة:", error);
+                }
+
+                const postsDiv = document.getElementById('dp-posts-list');
+                postsDiv.innerHTML = `<p style="text-align:center; color:#888;">${dict.fetching_posts || 'جاري جلب المنشورات'} <ion-icon name="sync" style="animation: spin 1s linear infinite;"></ion-icon></p>`;
+
+                try {
+                    const postsSnap = await firebase.firestore().collection('posts')
+                                                .where('authorId', '==', docId)
+                                                .orderBy('timestamp', 'desc')
+                                                .limit(5)
+                                                .get();
+
+                    if (postsSnap.empty) {
+                        postsDiv.innerHTML = `<p style="text-align: center; color: #666; font-size: 13px;">${dict.no_posts_doc || 'هذا الطبيب لم يقم بنشر أي شيء في المجتمع بعد.'}</p>`;
+                    } else {
+                        postsDiv.innerHTML = '';
+                        postsSnap.forEach(postDoc => {
+                            const post = postDoc.data();
+                            const date = post.timestamp ? post.timestamp.toDate().toLocaleDateString('ar-EG') : (dict.recently || 'حديثاً');
+                            const imgUrl = post.imageURL || post.imageUrl || post.postImg || post.image;
+                            let imageHtml = imgUrl ? `<div style="margin-top:10px; border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,0.1);"><img src="${imgUrl}" style="width:100%; max-height:200px; object-fit:cover; display:block;"></div>` : '';
+
+                            postsDiv.innerHTML += `
+                                <div class="dp-post" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:12px; text-align:right;">
+                                    <p style="color:white; margin:0; font-size:14px; line-height:1.6;">${post.content || ''}</p>
+                                    ${imageHtml}
+                                    <div style="margin-top:10px; color:#888; font-size:11px; display:flex; align-items:center; gap:5px;">
+                                        <ion-icon name="time-outline"></ion-icon> <span>${date}</span>
+                                    </div>
+                                </div>`;
+                        });
+                    }
+                } catch(err) {
+                    console.error(err);
+                    postsDiv.innerHTML = `<p style="text-align:center; color:var(--orange); font-size:12px;">${dict.error_fetch_posts || 'خطأ في جلب المنشورات.'}</p>`;
+                }
+            },
+
+            // 🚨 التعديل السحري هنا: النقل لصفحة الرسائل بدلاً من السلايد
+            startChat: function() {
+                if (!this.currentDoctorSelected) return;
+                
+                // حفظ بيانات الطبيب لكي تستقبلها صفحة الرسائل الجديدة
+                localStorage.setItem('chat_target_uid', this.currentDoctorSelected.id);
+                localStorage.setItem('chat_target_name', this.currentDoctorSelected.name);
+                localStorage.setItem('chat_target_img', this.currentDoctorSelected.photoURL);
+                
+                // الانتقال لصفحة الرسائل
+                document.getElementById('top-progress-bar').style.display = 'block';
+                setTimeout(() => { document.getElementById('top-progress-bar').style.width = '70%'; }, 10);
+                setTimeout(() => { window.location.href = 'patient_inbox.html'; }, 300);
+            },
+
+            openBookingModal: function() {
+                if(!this.currentDoctorSelected) return;
+                document.getElementById('book-doc-name').innerText = this.currentDoctorSelected.name;
+                document.getElementById('booking-modal').style.display = 'flex';
+            },
+
+            submitBooking: async function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const date = document.getElementById('book-date').value;
+                const time = document.getElementById('book-time').value;
+                const notes = document.getElementById('book-notes').value.trim();
+                const patient = firebase.auth().currentUser;
+
+                if(!patient || !date || !time) return window.showToast(dict.alert_fill_all || "يرجى تحديد التاريخ والوقت! ⚠️");
+
+                const btn = document.getElementById('submit-booking-btn');
+                btn.innerText = dict.sending || 'جاري الإرسال...';
+                btn.disabled = true;
+
+                try {
+                    const patientDoc = await firebase.firestore().collection('users').doc(patient.uid).get();
+                    const patientName = patientDoc.exists ? patientDoc.data().name : "مريض";
+
+                    await firebase.firestore().collection('appointments').add({
+                        doctorId: this.currentDoctorSelected.id,
+                        doctorName: this.currentDoctorSelected.name,
+                        patientId: patient.uid,
+                        patientName: patientName,
+                        date: date,
+                        time: time,
+                        notes: notes,
+                        status: 'pending',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    document.getElementById('booking-modal').style.display = 'none';
+                    window.showToast(dict.booking_success || "تم إرسال طلب الموعد بنجاح ✅");
+                } catch (error) {
+                    console.error("خطأ:", error);
+                    window.showToast(dict.alert_error || "حدث خطأ غير متوقع!");
+                } finally {
+                    btn.innerText = dict.btn_confirm_send || 'تأكيد وإرسال الطلب ✔️';
+                    btn.disabled = false;
+                }
+            }
+        };
+
+        // 3. تشغيل المحرك فوراً عند اكتمال تحميل الصفحة والتحقق من المستخدم
+        document.addEventListener('DOMContentLoaded', () => {
+            firebase.auth().onAuthStateChanged((user) => {
+                if(user) {
+                    window.findDocsEngine.init();
+                } else {
+                    document.getElementById('doctors-list').innerHTML = `<p style="text-align:center; color:var(--orange);">يجب تسجيل الدخول أولاً 🔒</p>`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

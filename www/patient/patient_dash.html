@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Healthmate | Patient Dashboard</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link rel="stylesheet" href="../css/patient_dash.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+</head>
+<body>
+<div id="top-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; background: var(--blue, #00f3ff); width: 0%; z-index: 999999; transition: width 0.3s ease; display: none; box-shadow: 0 0 10px var(--blue, #00f3ff);"></div>
+   <header class="patient-header" style="position: relative; display: flex; justify-content: space-between; align-items: center;">
+        
+        <div class="user-info">
+            <p id="greeting-text" data-i18n="dash_greeting">مرحباً بك،</p>
+            <h1 id="patient-name">جاري التحميل...</h1>
+        </div>
+
+
+        <div class="header-actions" style="display: flex; align-items: center; gap: 15px;">
+            <div style="position: relative; cursor: pointer; display: flex;" onclick="openSPA('appointments-slide')">
+                <ion-icon name="calendar-number-outline" class="nav-icon" style="font-size: 28px; color: var(--text-main);"></ion-icon>
+                <span id="app-notif-dot" style="display:none; position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: var(--red); border-radius: 50%; border: 2px solid var(--bg-app);"></span>
+            </div>
+            <ion-icon name="options-outline" class="nav-icon" style="font-size: 28px; cursor: pointer; color: var(--text-main);" onclick="window.toggleSettings()"></ion-icon>
+        </div>
+
+    </header>
+
+   <main class="grid-container">
+       
+
+        <div class="app-card c-radar "onclick="window.goToPage('health_radar.html')">
+            <ion-icon name="map"></ion-icon>
+            <span data-i18n="card_radar">رادار الصحة</span>
+        </div>
+
+      <div class="app-card c-blood "onclick="window.goToPage('blood_rescue.html')">
+            <ion-icon name="water"></ion-icon>
+            <span data-i18n="card_blood">نداء استغاثة (دم)</span>
+        </div>
+<div class="app-card c-folder " onclick="window.goToPage('cloud_folder.html')">
+            <ion-icon name="folder-open"></ion-icon>
+            <span data-i18n="card_folder">ملفي السحابي</span>
+        </div>
+
+        <div class="app-card c-pharmacy "onclick="window.goToPage('pharmacy_duty.html')">
+            <ion-icon name="search-circle"></ion-icon>
+            <span data-i18n="card_pharmacy">طوارئ الصيدليات</span>
+        </div>
+     
+
+       
+        <div class="app-card c-docs " onclick="window.goToPage('find_doctors.html')">
+            <ion-icon name="search-circle-outline"></ion-icon>
+            <span data-i18n="card_docs">البحث عن طبيب</span>
+        </div>
+
+        <div class="app-card c-chat " onclick="window.goToPage('patient_inbox.html')">
+            <ion-icon name="chatbubbles-outline"></ion-icon>
+            <span data-i18n="card_chat">رسائلي</span>
+        </div>
+
+        <div class="app-card c-ai-scanner " onclick="window.goToPage('drug_scanner.html')">
+            <ion-icon name="scan-outline"></ion-icon>
+            <span data-i18n="card_ai">الماسح الذكي (AI)</span>
+        </div>
+
+    </main>
+  
+
+  
+   
+    
+            
+          
+    
+     <div id="settings-modal" class="glass-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(15px); z-index: 100000; justify-content: center; align-items: center;" onclick="if(event.target === this) window.toggleSettings()">
+        
+        <div class="royal-modal" style="background: #111; border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; width: 85%; max-width: 350px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 data-i18n="settings_title" style="color: var(--blue); margin: 0; font-size: 20px;">الإعدادات ⚙️</h3>
+                <ion-icon name="close-circle" style="font-size: 28px; color: #555; cursor: pointer;" onclick="window.toggleSettings()"></ion-icon>
+            </div>
+            <div class="settings-item" onclick="window.goToPage('offline_dash.html')" style="border-color: rgba(183, 148, 244, 0.3);">
+    <ion-icon name="cloud-offline-outline" style="color: var(--purple);"></ion-icon>
+    <span style="color: var(--purple);">الدخول لوضع الطوارئ (بدون إنترنت) 📴</span>
+</div>
+
+            <div class="settings-item" onclick="window.toggleTheme()">
+                <ion-icon name="moon" style="color: var(--purple);"></ion-icon>
+                <span data-i18n="settings_theme">تغيير المظهر (مظلم/مضيء) 🌓</span>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 15px; padding: 15px; margin-bottom: 12px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <ion-icon name="language" style="font-size: 24px; color: var(--orange);"></ion-icon>
+        <span data-i18n="settings_language" style="font-weight: bold; color: white;">لغة التطبيق</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <button class="lang-mini-btn" onclick="window.setAppLang('ar')" data-i18n="lang_ar_btn">عربي</button>
+        <button class="lang-mini-btn" onclick="window.setAppLang('en')"data-i18n="lang_en_btn">English</button>
+        <button class="lang-mini-btn" onclick="window.setAppLang('fr')" data-i18n="lang_fr_btn">Français</button>
+    </div>
+</div>
+
+            <div class="settings-item" style="border-color: rgba(255,0,0,0.3);" onclick="window.patientLogout()">
+                <ion-icon name="log-out" style="color: var(--red);"></ion-icon>
+                <span data-i18n="settings_logout" style="color: var(--red);">تسجيل الخروج</span>
+            </div>
+        </div>
+    </div>
+
+   <div id="appointments-slide" class="slide-page">
+        <div class="slide-header">
+            <ion-icon name="arrow-forward-outline" class="back-btn" onclick="closeSPA('appointments-slide')"></ion-icon>
+            <h2 style="margin: 0; font-size: 18px;" data-i18n="my_apps_title">مواعيدي المحجوزة 📅</h2>
+        </div>
+        
+        <div style="padding: 20px;">
+            <p style="color: var(--text-sub); font-size: 13px; text-align: center; margin-bottom: 20px;" data-i18n="my_apps_desc">هنا يمكنك متابعة حالة طلباتك (قبول، رفض، أو انتظار).</p>
+            
+            <div id="appointments-list" style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="text-align:center; padding:40px; color:#666;">
+                    <ion-icon name="sync" style="font-size:40px; animation: spin 2s linear infinite;"></ion-icon>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+   
+
+  
+   
+  
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script src="../js/languages.js"></script>
+<script src="patient_dash.js"></script>
+<script src="appointments-engine.js"></script>
+    
+
+<script>// كود زر الرجوع الاحترافي المتوافق مع الموبايل
+document.addEventListener('deviceready', () => {
+    const App = window.Capacitor.Plugins.App;
+
+    App.addListener('backButton', () => {
+        // البحث عن أي صفحة منزلقة مفتوحة (تأكد أن الصفحات المفتوحة تأخذ كلاس active)
+        const activeSlide = document.querySelector('.slide-page.active');
+        
+        // البحث عن المودالات المفتوحة (مثل مودال المنشورات أو الدعم)
+        const activeModal = document.querySelector('.modal[style*="display: flex"]') || 
+                           document.querySelector('.modal[style*="display: block"]');
+
+        if (activeSlide) {
+            // إغلاق الصفحة المنزلقة بدلاً من الخروج من التطبيق
+            if (typeof window.closeSPA === 'function') {
+                window.closeSPA(activeSlide.id);
+            } else {
+                activeSlide.classList.remove('active');
+            }
+        } else if (activeModal) {
+            // إغلاق المودال إذا كان مفتوحاً
+            activeModal.style.display = 'none';
+        } else {
+            // إذا لم يكن هناك شيء مفتوح، يخرج من التطبيق
+            App.exitApp();
+        }
+    });
+});</script>
+</body>
+</html>

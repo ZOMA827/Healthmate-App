@@ -1,0 +1,98 @@
+/* ================= 1. الهوية البصرية للبروفايل المطور (No Cover) ================= */
+.pro-container { background: var(--bg-color); min-height: 100vh; padding-bottom: 60px; }
+.pro-header-clean { background: var(--card-bg); padding: 20px 20px 0; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; }
+
+/* الصورة والكاميرا */
+.pro-avatar-wrapper { position: relative; display: inline-block; margin-bottom: 15px; }
+.pro-avatar { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--primary); object-fit: cover; background: var(--bg-color); }
+.pro-edit-avatar { position: absolute; bottom: 0; right: 0; background: var(--input-bg); padding: 8px; border-radius: 50%; cursor: pointer; color: var(--text-main); border: 2px solid var(--card-bg); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); transition: 0.2s;}
+.pro-edit-avatar:active { transform: scale(0.9); }
+
+/* نصوص البروفايل */
+.pro-name { font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0 0 5px 0; }
+.pro-role { color: var(--primary); font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.pro-bio { color: var(--text-muted); font-size: 14px; max-width: 90%; margin: 0 auto 15px; line-height: 1.6; white-space: pre-wrap; }
+
+/* شريط الإحصائيات */
+.pro-stats { display: flex; justify-content: center; gap: 30px; width: 100%; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 15px 0; margin-bottom: 15px; }
+.pro-stat-item { display: flex; flex-direction: column; align-items: center; font-size: 13px; color: var(--text-muted); font-weight: 600; }
+.pro-stat-item span { font-size: 18px; font-weight: 800; color: var(--text-main); }
+
+/* الأزرار العلوية (متابعة، تعديل...) */
+.pro-action-btns { display: flex; gap: 10px; width: 100%; justify-content: center; margin-bottom: 20px; }
+.pro-btn { flex: 1; max-width: 150px; padding: 10px; border-radius: 25px; font-weight: 700; font-family: 'Cairo'; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; border: none; }
+.pro-btn:active { transform: scale(0.95); }
+.pro-btn-primary { background: var(--text-main); color: var(--card-bg); }
+.pro-btn-outline { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); }
+.pro-btn-msg { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); max-width: 50px; }
+
+/* التبويبات */
+.pro-tabs { display: flex; width: 100%; justify-content: space-around; }
+.pro-tab { padding: 15px; font-weight: 700; color: var(--text-muted); cursor: pointer; position: relative; transition: 0.2s; flex: 1; }
+.pro-tab.active { color: var(--primary); }
+.pro-tab.active::after { content: ''; position: absolute; bottom: 0; left: 10%; width: 80%; height: 3px; background: var(--primary); border-radius: 3px 3px 0 0; }
+
+/* منطقة العرض (كامل الشاشة للمنشورات، Grid للوسائط) */
+.pro-content-area { width: 100%; padding: 0; margin: 0; background: var(--bg-color); }
+.pro-tab-content { display: none; animation: fadeIn 0.3s ease; }
+.pro-tab-content.active { display: block; }
+
+/* تعديل عرض المنشورات لتكون Full Width */
+#tab-posts .post-card { border-radius: 0; border-left: none; border-right: none; margin-bottom: 8px; box-shadow: none; }
+
+/* شبكة الوسائط (Media Grid) */
+.media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+.media-grid img, .media-grid video { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; cursor: pointer; }
+/* ================= ستايل النافذة المنبثقة (Modal) ================= */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 20000; justify-content: center; align-items: center; padding: 15px; backdrop-filter: blur(5px); }
+.modal-content { background: var(--card-bg); width: 100%; max-width: 450px; border-radius: 20px; padding: 25px; border: 1px solid var(--border-color); animation: scaleUp 0.3s ease; max-height: 85vh; overflow-y: auto; scrollbar-width: none;}
+.modal-content::-webkit-scrollbar { display: none; } /* إخفاء شريط التمرير لشكل أنظف */
+@keyframes scaleUp { from {transform: scale(0.9); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+.modal-header h2 { margin: 0; font-size: 18px; color: var(--text-main); font-weight: 800;}
+
+/* تنسيق الحقول والنصوص */
+#editProfileModal label { font-size: 13px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px; }
+.modal-input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); font-family: 'Cairo'; outline: none; transition: 0.2s; font-size: 14px;}
+.modal-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(24,119,242,0.2); }
+
+.modal-btn { border: none; padding: 12px; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 15px; font-family: 'Cairo'; transition: 0.2s; color: white;}
+.modal-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+/* ================= تصميم أزرار التبديل (Toggle Switch) ================= */
+.toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+input:checked + .slider { background-color: var(--primary); }
+input:checked + .slider:before { transform: translateX(22px); }
+[dir="rtl"] input:checked + .slider:before { transform: translateX(-22px); }
+.noti-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: 0.3s; }
+.noti-item.unread { background: var(--input-bg); border-left: 4px solid var(--primary); }
+.noti-img { width: 50px; height: 50px; border-radius: 50%; margin-left: 12px; }
+.noti-info p { margin: 0; font-size: 14px; color: var(--text-main); }
+.noti-info small { color: var(--text-sub); font-size: 11px; }
+.noti-icon { margin-right: auto; font-size: 20px; }
+.noti-icon.like_post { color: #ff3b30; }
+.noti-icon.follow { color: #007aff; }
+.noti-icon.admin_msg { color: #ffcc00; }
+/* ==========================================
+   🛡️ درع الحماية لجميع النوافذ الداخلية (منع الاختفاء تحت الساعة)
+   ========================================== */
+
+.slide-header, 
+.profile-header, 
+.modal-header {
+    /* دمج مسافة الأمان الخاصة بالهاتف + مسافة جمالية */
+    padding-top: calc(env(safe-area-inset-top, 35px) + 10px) !important;
+    height: auto !important; /* 🚨 هذا السطر هو العلاج الذي يمنع انضغاط الهيدر وظهور الخط */
+    min-height: 65px !important; /* للحفاظ على الحجم الطبيعي في المتصفحات العادية */
+    align-items: center !important;
+}
+
+/* حماية أزرار الإغلاق (X) العائمة */
+.close-btn,
+.close-story-btn,
+ion-icon.close-circle {
+    top: calc(env(safe-area-inset-top, 35px) + 10px) !important;
+}

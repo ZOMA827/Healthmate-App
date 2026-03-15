@@ -1,0 +1,11 @@
+{
+  "appId": "com.healthmate.app",
+  "appName": "Healthmate",
+  "webDir": "www",
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": false,
+      "providers": ["google.com"]
+    }
+  }
+}

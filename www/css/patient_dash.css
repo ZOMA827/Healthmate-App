@@ -1,0 +1,636 @@
+
+:root {
+            --bg-color: #0a0a0a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-sub: #888888;
+            --blue: #00d2ff; --green: #42e695; --orange: #ff9a9e;
+            --purple: #b794f4; --teal: #4fd1c5; --red: #ff4b2b; --gold: #f6e58d;
+        }
+
+        body { 
+            font-family: 'Cairo', sans-serif; 
+            background: var(--bg-color); 
+            margin: 0; color: var(--text-main); 
+            overflow-x: hidden;
+            transition: background 0.3s, color 0.3s;
+        }
+        /* --- الهيدر الذكي (تمت إضافة حماية النوتش والساعة هنا داخلياً) --- */
+        .patient-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            /* السحر هنا: دمج مسافة الأمان مع البادينغ الطبيعي */
+            padding: calc(env(safe-area-inset-top, 35px) + 15px) 20px 20px 20px !important;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(15px); border-bottom: 1px solid var(--border-color);
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        .slide-header {
+            display: flex; align-items: center; 
+            /* السحر هنا أيضاً للنوافذ الداخلية */
+            padding: calc(env(safe-area-inset-top, 35px) + 15px) 20px 15px 20px !important;
+            border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.85); 
+            backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 10;
+        }
+        .user-info p { margin: 0; font-size: 12px; color: var(--text-sub); }
+        .user-info h1 { margin: 0; font-size: 22px; font-weight: 900; }
+        
+        .offline-badge {
+            background: rgba(183, 148, 244, 0.2); color: var(--purple);
+            border: 1px solid var(--purple); padding: 5px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: bold; display: none; align-items: center; gap: 5px;
+        }
+        /* --- نظام التنبيهات (Toast) --- */
+        #toast-msg {
+            position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); /* التوسيط يعمل للغتين بنفس الشكل */
+            background: rgba(255, 255, 255, 0.95); color: #000; padding: 12px 25px;
+            border-radius: 50px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 100000;
+            transition: 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55); opacity: 0;
+            pointer-events: none; display: flex; align-items: center; gap: 8px;
+        }
+        #toast-msg.show { bottom: 30px; opacity: 1; }
+        #toast-msg ion-icon { font-size: 20px; color: var(--blue); }
+
+        /* --- شبكة التطبيقات --- */
+        .grid-container { 
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; 
+            padding: 20px;
+        }
+        .app-card {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 25px; padding: 25px 10px; text-align: center;
+            transition: 0.3s; cursor: pointer; display: flex; flex-direction: column; align-items: center;
+        }
+        .app-card:active { transform: scale(0.95); }
+        .app-card ion-icon { font-size: 45px; margin-bottom: 15px; }
+        .app-card span { font-weight: 700; font-size: 14px; }
+
+        .c-meds ion-icon { color: var(--red); filter: drop-shadow(0 0 10px rgba(255, 75, 43, 0.5)); }
+        .c-id ion-icon { color: var(--orange); filter: drop-shadow(0 0 10px rgba(255, 154, 158, 0.5)); }
+        .c-firstaid ion-icon { color: var(--green); filter: drop-shadow(0 0 10px rgba(66, 230, 149, 0.5)); }
+        .c-presc ion-icon { color: var(--gold); filter: drop-shadow(0 0 10px rgba(246, 229, 141, 0.5)); }
+        .c-docs ion-icon { color: var(--blue); filter: drop-shadow(0 0 10px rgba(0, 210, 255, 0.5)); }
+        .c-chat ion-icon { color: var(--teal); filter: drop-shadow(0 0 10px rgba(79, 209, 197, 0.5)); }
+
+        /* تعديل النوافذ المنزلقة لتنقلب حسب اللغة */
+        .slide-page {
+            position: fixed; top: 0; width: 100%; height: 100vh;
+            background: var(--bg-color); z-index: 1000; 
+            overflow-y: auto; display: flex; flex-direction: column;
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        /* للغة العربية يدخل من اليمين */
+        [dir="rtl"] .slide-page { transform: translateX(100%); left: 0; }
+        [dir="rtl"] .slide-page.active { transform: translateX(0); }
+        /* للإنجليزية والفرنسية يدخل من اليسار */
+        [dir="ltr"] .slide-page { transform: translateX(-100%); right: 0; }
+        [dir="ltr"] .slide-page.active { transform: translateX(0); }
+        
+      
+        
+        .back-btn { font-size: 28px; cursor: pointer; margin-inline-end: 15px; color: var(--text-main); }
+        /* قلب السهم في اللغات الأجنبية */
+        [dir="ltr"] .back-btn { transform: scaleX(-1); }
+        
+        .disabled-offline { opacity: 0.3; pointer-events: none; filter: grayscale(100%); }
+
+        /* --- ستايل الإسعافات الأولية (Accordion) المطور --- */
+        .fa-card { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 15px; 
+            margin-bottom: 15px; 
+            overflow: hidden; 
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            flex-shrink: 0; 
+        }
+        .fa-header { 
+            padding: 16px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            cursor: pointer; 
+            font-weight: bold; 
+            color: var(--text-main);
+            font-size: 15px;
+            background: rgba(255,255,255,0.02); 
+        }
+        .fa-body { 
+            padding: 0 20px 20px 20px; 
+            display: none; 
+            color: var(--text-sub); 
+            font-size: 13.5px; 
+            line-height: 1.8; 
+            border-top: 1px solid rgba(255,255,255,0.05);
+            margin-top: 5px;
+            padding-top: 15px;
+            text-align: start; /* محاذاة النص حسب اللغة */
+        }
+        .fa-card.active .fa-body { 
+            display: block; 
+            animation: fadeIn 0.3s ease; 
+        }
+        .fa-card.active .fa-header ion-icon { 
+            transform: rotate(180deg); 
+            color: var(--green); 
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- ستايل الوصفات الطبية --- */
+        .upload-btn-wrapper { text-align: center; margin-bottom: 20px; }
+        .upload-btn { background: var(--gold); color: #000; padding: 12px 25px; border-radius: 25px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+        .presc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .presc-item { position: relative; border-radius: 15px; overflow: hidden; border: 1px solid var(--border-color); aspect-ratio: 1; background: #111; }
+        .presc-item img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+        
+        .presc-delete { 
+            position: absolute; top: 5px; inset-inline-end: 5px; /* يمين في العربي، يسار في الانجليزي */
+            background: rgba(255,0,0,0.8); color: white; border-radius: 50%; padding: 6px; cursor: pointer; font-size: 18px; 
+        }
+
+        /* نافذة عرض الصورة بالحجم الكامل */
+        #image-viewer { display: none; position: fixed; top:0; left:0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center; }
+        #image-viewer img { max-width: 95%; max-height: 90%; border-radius: 10px; }
+        #image-viewer .close-img { position: absolute; top: 20px; inset-inline-end: 20px; color: white; font-size: 35px; cursor: pointer; }
+        
+        /* --- ستايل تذكير الأدوية --- */
+        .med-form-card {
+            background: var(--card-bg); border: 1px solid var(--blue);
+            padding: 20px; border-radius: 20px; display: none; flex-direction: column; gap: 10px;
+            animation: slideDown 0.3s ease; margin-bottom: 20px;
+        }
+        .med-form-card.show { display: flex; }
+        .med-input {
+            background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: white;
+            padding: 12px 15px; border-radius: 12px; outline: none; font-family: 'Cairo'; width: 100%; box-sizing: border-box;
+            text-align: start; /* مهم جداً للمدخلات */
+        }
+        .save-med-btn {
+            background: var(--blue); color: #000; font-weight: bold; border: none;
+            padding: 12px; border-radius: 12px; cursor: pointer; font-family: 'Cairo'; margin-top: 10px;
+        }
+        
+        .med-card {
+            background: var(--card-bg); border: 1px solid var(--border-color); 
+            border-inline-start: 4px solid var(--red); /* الشريط الأحمر سيغير مكانه تلقائيا */
+            padding: 15px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .med-card h4 { margin: 0 0 5px 0; color: white; font-size: 18px; text-align: start;}
+        .med-card p { margin: 0; color: var(--text-sub); font-size: 13px; text-align: start;}
+        .meal-badge {
+            display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-top: 8px;
+        }
+        .badge-before { background: rgba(255, 154, 158, 0.2); color: var(--orange); border: 1px solid var(--orange); }
+        .badge-after { background: rgba(66, 230, 149, 0.2); color: var(--green); border: 1px solid var(--green); }
+        .badge-during { background: rgba(0, 210, 255, 0.2); color: var(--blue); border: 1px solid var(--blue); }
+        .badge-any { background: rgba(183, 148, 244, 0.2); color: var(--purple); border: 1px solid var(--purple); }
+
+        .med-time { font-size: 24px; font-weight: 900; color: white; letter-spacing: 1px; }
+        .med-delete { color: var(--red); font-size: 24px; cursor: pointer; padding: 5px; }
+
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .slot-btn {
+            flex: 1; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--border-color);
+            padding: 10px; border-radius: 10px; cursor: pointer; font-family: 'Cairo'; transition: 0.3s;
+        }
+        .slot-btn.active { background: var(--blue); color: black; font-weight: bold; border-color: var(--blue); }
+        
+        /* --- ستايل الهوية الطبية (Medical ID Card) --- */
+        .medical-id-card {
+            background: linear-gradient(135deg, rgba(255, 75, 43, 0.1), rgba(255, 154, 158, 0.05));
+            border: 1px solid rgba(255, 75, 43, 0.3);
+            border-radius: 20px; padding: 25px;
+            box-shadow: 0 15px 35px rgba(255, 75, 43, 0.15), inset 0 0 20px rgba(255, 255, 255, 0.02);
+            position: relative; overflow: hidden; transition: 0.3s;
+        }
+        .medical-id-card::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 60%);
+            transform: rotate(45deg); pointer-events: none;
+        }
+        
+        .id-header {
+            display: flex; align-items: center; gap: 10px; color: var(--orange);
+            font-weight: 900; font-size: 16px; margin-bottom: 20px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;
+        }
+        .id-header ion-icon { font-size: 26px; filter: drop-shadow(0 0 8px var(--red)); }
+        
+        .id-body { display: flex; justify-content: space-between; align-items: center; }
+        .id-info { text-align: start; }
+        .id-info h3 { margin: 0 0 15px 0; color: white; font-size: 22px; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .id-info p { margin: 8px 0; font-size: 13px; color: #ccc; }
+        .id-info strong { color: white; font-size: 14px; margin-inline-end: 5px; } /* مسافة ذكية تتكيف مع اللغة */
+        
+        .blood-type { 
+            background: var(--red); color: white !important; 
+            padding: 2px 10px; border-radius: 8px; font-weight: 900 !important; 
+            box-shadow: 0 0 15px rgba(255, 75, 43, 0.6); letter-spacing: 1px;
+        }
+        .id-qr ion-icon { font-size: 80px; color: rgba(255,255,255,0.1); }
+
+        /* --- ستايل الإعدادات --- */
+        .settings-item {
+            display: flex; align-items: center; gap: 12px; padding: 15px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-color);
+            border-radius: 15px; margin-bottom: 12px; cursor: pointer; transition: 0.3s;
+        }
+        .settings-item:hover { background: rgba(255,255,255,0.1); transform: scale(0.98); }
+        .settings-item ion-icon { font-size: 24px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); }
+        .settings-item span { font-weight: bold; font-size: 15px; color: white; font-family: 'Cairo'; }
+        
+        .lang-mini-btn {
+            flex: 1; background: rgba(0,0,0,0.5); color: white; border: 1px solid var(--border-color);
+            padding: 10px; border-radius: 10px; cursor: pointer; font-family: 'Cairo'; font-weight: bold; transition: 0.3s;
+        }
+        .lang-mini-btn:hover { background: var(--orange); color: black; border-color: var(--orange); }
+
+        /* ========================================== */
+/* ✅ دعم الثيم الفاتح - نسخة مصلحة وشاملة */
+/* ========================================== */
+
+[data-theme="light"] {
+    --bg-color: #f4f7f6;
+    --text-main: #111111;
+    --card-bg: #ffffff;
+    --border-color: #dddddd;
+    /* تحديث ألوان الأيقونات في الوضع المضيء لتكون أوضح */
+    --text-sub: #555555;
+}
+
+/* التنسيقات الأساسية التي وضعتها أنت */
+[data-theme="light"] .patient-header { background: rgba(255,255,255,0.9) !important; }
+[data-theme="light"] .slide-header { background: rgba(255,255,255,0.9) !important; }
+[data-theme="light"] .settings-item span { color: #111111 !important; }
+
+/* 🛠️ إصلاح نافذة الإعدادات (لأن فيها ألوان ثابتة داخل الـ HTML) */
+
+/* خلفية المودال الشفافة */
+[data-theme="light"] #settings-modal {
+    background: rgba(0, 0, 0, 0.4) !important; /* تعتيم خفيف للخلفية */
+    backdrop-filter: blur(10px) !important;
+}
+
+/* جسم نافذة الإعدادات */
+[data-theme="light"] .royal-modal {
+    background: var(--card-bg) !important; /* ستصبح بيضاء */
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.1) !important;
+}
+
+/* إصلاح العناوين والنصوص داخل الإعدادات */
+[data-theme="light"] .royal-modal h3 { color: var(--blue) !important; }
+[data-theme="light"] .royal-modal span { color: var(--text-main) !important; }
+
+/* إصلاح قسم اختيار اللغة (المربع الداخلي) */
+[data-theme="light"] .royal-modal div[style*="background: rgba(255,255,255,0.05)"] {
+    background: rgba(0, 0, 0, 0.05) !important; /* خلفية رمادية فاتحة جداً */
+    border: 1px solid var(--border-color) !important;
+}
+
+/* أزرار اللغة الصغيرة */
+[data-theme="light"] .lang-mini-btn {
+    background: #eeeeee !important;
+    color: #333333 !important;
+    border: 1px solid #cccccc !important;
+}
+
+[data-theme="light"] .lang-mini-btn:hover {
+    background: var(--orange) !important;
+    color: white !important;
+}
+
+/* عناصر الإعدادات (القائمة) */
+[data-theme="light"] .settings-item {
+    background: rgba(0, 0, 0, 0.03) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+[data-theme="light"] .settings-item:hover {
+    background: rgba(0, 0, 0, 0.07) !important;
+}
+
+/* أيقونات الإغلاق */
+[data-theme="light"] ion-icon[style*="color: #555"] {
+    color: #888888 !important;
+}
+        
+        /* --- 🔍 ستايل البحث عن طبيب --- */
+        .search-container { position: relative; margin-bottom: 20px; }
+        .search-container input {
+            width: 100%; background: rgba(0,0,0,0.6); border: 1px solid var(--border-color);
+            color: white; border-radius: 20px;
+            padding: 16px;
+            padding-inline-start: 50px; /* مسافة أيقونة البحث تتغير تلقائياً مع اللغة */
+            padding-inline-end: 20px;
+            font-family: 'Cairo'; font-size: 15px; outline: none; transition: 0.3s;
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.5); box-sizing: border-box;
+            text-align: start;
+        }
+        .search-container input:focus { border-color: var(--blue); box-shadow: 0 0 15px rgba(0, 210, 255, 0.2); }
+        .search-icon { 
+            position: absolute; 
+            inset-inline-start: 18px; /* مكان الأيقونة يمين في العربي ويسار في اللغات الاخرى */
+            top: 50%; transform: translateY(-50%); color: var(--blue); font-size: 22px; 
+        }
+        
+        /* صندوق التخمين المتطور */
+        .autocomplete-box {
+            position: absolute; top: 100%; left: 0; width: 100%; background: #1a1a1a;
+            border: 1px solid var(--border-color); border-radius: 15px; margin-top: 5px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 100; display: none; max-height: 200px; overflow-y: auto;
+        }
+        .auto-item { padding: 12px 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .auto-item:hover { background: rgba(0, 210, 255, 0.1); }
+        .auto-item img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+
+        /* شريط التخصصات الأفقي */
+        .specialty-scroll {
+            display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px;
+            scrollbar-width: none; 
+        }
+        .specialty-scroll::-webkit-scrollbar { display: none; }
+        .spec-pill {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-color);
+            padding: 8px 18px; border-radius: 25px; font-size: 13px; font-weight: bold;
+            white-space: nowrap; cursor: pointer; transition: 0.3s; color: #ccc;
+        }
+        .spec-pill.active { background: var(--blue); color: black; border-color: var(--blue); box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); }
+
+        /* شبكة الأطباء */
+        .doctors-grid { display: flex; flex-direction: column; gap: 15px; padding-bottom: 30px; }
+        .doc-card {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 20px; padding: 15px; display: flex; align-items: center; gap: 15px;
+            transition: 0.3s; cursor: pointer; position: relative; overflow: hidden;
+            text-align: start; /* تعديل مهم لتوافق اللغات */
+        }
+        .doc-card:active { transform: scale(0.98); }
+        /* الخط الأزرق الجانبي يتبدل حسب اللغة */
+        .doc-card::before { content:''; position:absolute; inset-inline-start:0; top:0; height:100%; width:4px; background:var(--blue); }
+        .doc-avatar { width: 60px; height: 60px; border-radius: 15px; object-fit: cover; border: 2px solid #333; }
+        .doc-info h4 { margin: 0 0 5px 0; color: white; font-size: 16px; }
+        .doc-info p { margin: 0; color: var(--text-sub); font-size: 12px; }
+        .spec-badge { display: inline-block; background: rgba(0, 210, 255, 0.1); color: var(--blue); padding: 3px 8px; border-radius: 8px; font-size: 11px; margin-top: 5px; border: 1px solid rgba(0, 210, 255, 0.2); }
+
+        /* ستايل نافذة بروفايل الطبيب */
+        .doc-avatar-large-wrap { position: relative; width: 100px; margin: 0 auto; }
+        .doc-avatar-large { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--blue); box-shadow: 0 0 20px rgba(0, 210, 255, 0.3); }
+        .status-dot { position: absolute; bottom: 5px; inset-inline-end: 5px; width: 15px; height: 15px; border-radius: 50%; border: 3px solid #111; }
+        .status-dot.online { background: var(--green); }
+        
+        .action-btn { flex: 1; padding: 12px; border-radius: 15px; font-family: 'Cairo'; font-weight: bold; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 14px; transition: 0.3s; }
+        .chat-btn { background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--border-color); }
+        .chat-btn:active { background: rgba(255,255,255,0.2); }
+        .book-btn { background: var(--blue); color: #000; box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3); }
+
+        /* منشورات الطبيب داخل البروفايل */
+        .dp-post { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 12px; text-align: start; }
+        .dp-post-text { color: #eee; font-size: 13px; line-height: 1.6; margin: 0 0 10px 0; }
+        .dp-post-date { color: #666; font-size: 11px; }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .app-card-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .status-pending { background: rgba(255, 165, 0, 0.2); color: #ffa500; }
+        .status-accepted { background: rgba(0, 255, 150, 0.2); color: #00ff96; }
+        .status-rejected { background: rgba(255, 70, 70, 0.2); color: #ff4646; }
+        
+        /* زر إلغاء الموعد الصغير */
+        .cancel-app-btn {
+            background: rgba(255, 75, 43, 0.1); border: 1px solid rgba(255, 75, 43, 0.3);
+            color: #ff4b2b; width: 40px; height: 40px; border-radius: 12px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: 0.3s;
+        }
+        .cancel-app-btn:hover { background: #ff4b2b; color: white; box-shadow: 0 0 15px rgba(255, 75, 43, 0.4); }
+        .cancel-app-btn ion-icon { font-size: 20px; }
+
+        /* ========================================== */
+        /* 🧪 تأثيرات الماسح الضوئي (Cyberpunk Style) */
+        /* ========================================== */
+        .scanner-frame {
+            position: relative; width: 280px; height: 380px;
+            border-radius: 20px; overflow: hidden;
+            background: #000; box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+        }
+        #camera-stream { width: 100%; height: 100%; object-fit: cover; }
+        
+        .corner { position: absolute; width: 40px; height: 40px; border: 3px solid #00f3ff; border-radius: 8px; z-index: 2; }
+        .top-left { top: 15px; inset-inline-start: 15px; border-inline-end: none; border-bottom: none; }
+        .top-right { top: 15px; inset-inline-end: 15px; border-inline-start: none; border-bottom: none; }
+        .bottom-left { bottom: 15px; inset-inline-start: 15px; border-inline-end: none; border-top: none; }
+        .bottom-right { bottom: 15px; inset-inline-end: 15px; border-inline-start: none; border-top: none; }
+        
+        .ai-laser {
+            position: absolute; width: 90%; height: 3px; background: #00f3ff;
+            left: 5%; top: 10%; z-index: 3;
+            box-shadow: 0 0 15px 5px rgba(0, 243, 255, 0.5);
+            animation: scanLaser 2.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes scanLaser {
+            0% { top: 10%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 90%; opacity: 0; }
+        }
+        
+        @keyframes pulseGlow {
+            0% { text-shadow: 0 0 10px #00f3ff; transform: scale(0.95); }
+            100% { text-shadow: 0 0 30px #00f3ff, 0 0 50px #00f3ff; transform: scale(1.05); }
+        }
+
+        .cyber-btn {
+            margin-top: 30px; padding: 15px 30px; font-size: 16px; font-weight: bold; font-family: 'Cairo';
+            background: rgba(0, 243, 255, 0.1); color: #00f3ff;
+            border: 1px solid #00f3ff; border-radius: 12px;
+            display: flex; align-items: center; gap: 10px; cursor: pointer;
+            transition: 0.3s; text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+        .cyber-btn:hover { background: #00f3ff; color: #000; box-shadow: 0 0 20px #00f3ff; }
+
+        .c-ai-scanner {
+            background: linear-gradient(135deg, #000428, #004e92) !important;
+            border: 1px solid #00f3ff !important;
+            color: #00f3ff !important;
+            animation: pulseGlowBox 2s infinite alternate;
+        }
+        .c-ai-scanner ion-icon { color: #00f3ff !important; text-shadow: 0 0 10px #00f3ff; }
+        
+        @keyframes pulseGlowBox {
+            0% { box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); }
+            100% { box-shadow: 0 0 25px rgba(0, 243, 255, 0.6), inset 0 0 10px rgba(0, 243, 255, 0.2); }
+        }
+
+        .cyber-btn-outline {
+            padding: 15px 20px; font-size: 15px; font-weight: bold; font-family: 'Cairo';
+            background: rgba(255, 255, 255, 0.05); color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px;
+            display: flex; align-items: center; gap: 8px; cursor: pointer;
+            transition: 0.3s; backdrop-filter: blur(5px);
+        }
+        .cyber-btn-outline:hover { 
+            background: rgba(255, 255, 255, 0.1); border-color: #00f3ff; 
+            color: #00f3ff; box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+        }
+
+        /* الميزات الأربعة للوضع الأوفلاين */
+        .c-contacts ion-icon { color: #e74c3c; filter: drop-shadow(0 0 10px rgba(231, 76, 60, 0.5)); }
+        .c-calc ion-icon { color: #9b59b6; filter: drop-shadow(0 0 10px rgba(155, 89, 182, 0.5)); }
+        .c-water ion-icon { color: #3498db; filter: drop-shadow(0 0 10px rgba(52, 152, 219, 0.5)); }
+        .c-vitals ion-icon { color: #e67e22; filter: drop-shadow(0 0 10px rgba(230, 126, 34, 0.5)); }
+
+        .hm-input {
+            background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main);
+            padding: 12px 15px; border-radius: 12px; outline: none; font-family: 'Cairo'; width: 100%; box-sizing: border-box; margin-bottom: 10px;
+            text-align: start;
+        }
+        .hm-btn {
+            background: var(--blue); color: #000; font-weight: bold; border: none;
+            padding: 12px; border-radius: 12px; cursor: pointer; font-family: 'Cairo'; width: 100%; margin-top: 10px;
+        }
+        .hm-list-item {
+            background: var(--card-bg); border: 1px solid var(--border-color); padding: 15px; border-radius: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+            border-inline-start: 4px solid var(--red); /* ديناميكي حسب اللغة */
+            text-align: start;
+        }
+
+        .water-circle {
+            width: 150px; height: 150px; border-radius: 50%; border: 8px solid var(--border-color);
+            margin: 30px auto; display: flex; justify-content: center; align-items: center; flex-direction: column;
+            cursor: pointer; position: relative; overflow: hidden; background: var(--card-bg);
+        }
+        .water-fill {
+            position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(52, 152, 219, 0.5);
+            transition: height 0.5s ease; z-index: 1;
+        }
+        .water-text { z-index: 2; font-size: 24px; font-weight: bold; color: var(--text-main); }
+        .c-radar ion-icon { color: #2ecc71; filter: drop-shadow(0 0 10px rgba(46, 204, 113, 0.5)); }
+        .c-blood ion-icon { color: #e74c3c; filter: drop-shadow(0 0 10px rgba(231, 76, 60, 0.5)); }
+
+        .hm-input option { background-color: var(--bg-color); color: var(--text-main); }
+
+        /* ========================================== */
+        /* 🩸 ستايلات شبكة نداء الدم (Blood Network)  */
+        /* ========================================== */
+        .blood-card {
+            background: linear-gradient(145deg, rgba(255, 75, 43, 0.08), var(--card-bg));
+            border: 1px solid rgba(255, 75, 43, 0.3); border-radius: 20px;
+            padding: 15px; position: relative; overflow: hidden;
+            box-shadow: 0 5px 15px rgba(255, 75, 43, 0.05); transition: background 0.3s, border-color 0.3s; 
+        }
+        .blood-card::before { content: ''; position: absolute; top: 0; inset-inline-end: 0; width: 5px; height: 100%; background: var(--red); }
+
+        .blood-type-badge {
+            background: var(--red); color: white; width: 55px; height: 55px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 22px; font-weight: 900;
+            box-shadow: 0 0 15px rgba(255, 75, 43, 0.5); flex-shrink: 0; border: 2px solid var(--bg-color); 
+        }
+        .blood-info { text-align: start; }
+        .blood-info h4 { margin: 0 0 5px 0; color: var(--text-main); font-size: 15px; }
+        .blood-info p { margin: 3px 0; color: var(--text-sub); font-size: 12px; display:flex; align-items:center; gap:5px;}
+
+        /* شريط عاجل (يتعكس حسب اللغة برمجيا) */
+        .blood-urgent {
+            position: absolute; top: 15px;
+            background: var(--red); color: white; font-size: 11px; font-weight: bold;
+            padding: 3px 35px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 1px;
+        }
+        [dir="rtl"] .blood-urgent { left: -35px; transform: rotate(-45deg); }
+        [dir="ltr"] .blood-urgent { right: -35px; transform: rotate(45deg); }
+
+        .c-folder ion-icon { color: var(--gold); filter: drop-shadow(0 0 10px rgba(246, 229, 141, 0.5)); }
+        .c-pharmacy ion-icon { color: var(--purple); filter: drop-shadow(0 0 10px rgba(183, 148, 244, 0.5)); }
+
+        .cloud-file-card {
+            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px;
+            padding: 10px; display: flex; align-items: center; gap: 15px; transition: 0.3s;
+        }
+        .cloud-file-card img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); cursor: zoom-in; }
+        .cloud-file-info { flex: 1; text-align: start; }
+        .cloud-file-info h4 { margin: 0 0 3px 0; font-size: 14px; color: var(--text-main); }
+        .cloud-file-info p { margin: 0; font-size: 11px; color: var(--text-sub); }
+
+        /* ========================================== */
+        /* 📡 ستايلات طوارئ الصيدليات ورادار الأدوية */
+        /* ========================================== */
+        .med-req-card {
+            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px;
+            padding: 15px; position: relative; overflow: hidden; transition: 0.3s; text-align: start;
+        }
+        .radar-ping {
+            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+            background: var(--orange); box-shadow: 0 0 10px var(--orange); position: relative;
+            margin-inline-end: 5px;
+        }
+        .radar-ping::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%; background: var(--orange); animation: pingAnim 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        @keyframes pingAnim { 75%, 100% { transform: scale(3); opacity: 0; } }
+
+        .med-req-card.found { border-color: var(--green); background: rgba(66, 230, 149, 0.05); }
+        .med-req-card.found .radar-ping { background: var(--green); box-shadow: 0 0 10px var(--green); }
+        .med-req-card.found .radar-ping::after { display: none; }
+
+        .duty-card {
+            background: linear-gradient(90deg, rgba(0, 210, 255, 0.1), var(--card-bg));
+            border-inline-start: 4px solid var(--blue);
+            border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* =========================================================
+           🎨 تنسيقات صندوق الوارد (الإنبوكس) للمريض
+           ========================================================= */
+        .inbox-card {
+            display: flex; align-items: center; background: rgba(255, 255, 255, 0.03); 
+            padding: 15px; border-radius: 16px; margin-bottom: 12px; cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.3s ease; gap: 15px; 
+        }
+        .inbox-card:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-2px); }
+
+        .inbox-avatar {
+            width: 55px !important; height: 55px !important; min-width: 55px; 
+            border-radius: 50%; object-fit: cover; border: 2px solid var(--blue, #00d2ff); background: #fff; 
+        }
+        .inbox-info { flex: 1; overflow: hidden; text-align: start; /* ديناميكي */ }
+        .inbox-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .inbox-header strong { color: white; font-size: 15px; }
+        .inbox-time { font-size: 14px; }
+        .inbox-last-msg {
+            margin: 0; color: #888; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+        }
+        
+        /* تعديلات أزرار الإغلاق في النوافذ المنبثقة */
+        #ai-scanner-modal ion-icon.close-circle,
+        #media-viewer-modal ion-icon.close-circle {
+            position: absolute; top: 30px; inset-inline-end: 30px; /* يسار في اللغات الأجنبية، ويمين في العربية */
+        }
+        #patient-view-doc-info { text-align: start !important; }
+
+        

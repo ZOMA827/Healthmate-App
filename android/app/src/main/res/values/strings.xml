@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Healthmate</string>
+    <string name="title_activity_main">Healthmate</string>
+    <string name="package_name">com.healthmate.app</string>
+    <string name="custom_url_scheme">com.healthmate.app</string>
+    <string name="server_client_id">1005719156245-48p83iuk4ubhihn26ikl5b90f463c2es.apps.googleusercontent.com</string>
+</resources>
