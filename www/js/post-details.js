@@ -77,7 +77,7 @@ window.openPostDetailsSlide = async function(postId, targetCommentId = null) {
             }
         });
 };
-// 2. دالة رسم المنشور (مع الترجمة ودعم الشاشة السينمائية)
+// 2. دالة رسم المنشور (مع الترجمة ودعم الشاشة السينمائية وعلامة التوثيق والستايل الفخم للأزرار + إصلاح التوجيه للبروفايل 🚀)
 function renderSinglePost(pid, p, container) {
     const myUid = window.auth?.currentUser?.uid;
     const isLiked = p.likes && p.likes.includes(myUid);
@@ -85,6 +85,9 @@ function renderSinglePost(pid, p, container) {
     document.querySelector('.comment-input-bar').style.display = commentsDisabled ? 'none' : 'flex';
 
     const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+
+    const likeColor = isLiked ? 'var(--danger)' : 'var(--text-sub)';
+    const likeIcon = isLiked ? 'heart' : 'heart-outline';
 
     let mediaHTML = '';
     if (p.mediaUrl) {
@@ -98,41 +101,65 @@ function renderSinglePost(pid, p, container) {
                 <ion-icon name="play-circle" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:60px; color:rgba(255,255,255,0.9); text-shadow:0 5px 15px rgba(0,0,0,0.5); z-index:2;"></ion-icon>
             </div>`;
         } else {
-            mediaHTML = `<img src="${p.mediaUrl}" onclick="window.openMediaViewer('${p.mediaUrl}')" style="width:100%; max-height:400px; object-fit:cover; display:block; cursor:pointer; border-radius:15px; margin-top:10px;">`;
+           mediaHTML = `<img src="${p.mediaUrl}" onclick="window.openMediaViewer('${p.mediaUrl}', '${pid}')" style="width:100%; max-height:400px; object-fit:cover; display:block; cursor:pointer; border-radius:15px; margin-top:10px;">`;
         }
     }
 
     container.innerHTML = `
         <div style="padding: 15px;">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                <img src="${p.authorImg || 'assets/img/profile.png'}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; cursor:pointer;" onclick="window.openProfileSlide('${p.authorId}')">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                <img src="${p.authorImg || 'assets/img/profile.png'}" style="width:45px; height:45px; border-radius:50%; object-fit:cover; cursor:pointer; border: 1px solid rgba(255,255,255,0.1);" onclick="window.openProfileSlide('${p.authorId}')">
                 <div style="flex:1;">
-                    <h4 style="margin:0; font-size:15px; cursor:pointer;" onclick="window.openProfileSlide('${p.authorId}')">${p.authorName || (dict.default_user_name || 'مستخدم')}</h4>
-                    <small style="color:var(--text-sub);">${window.timeAgo ? window.timeAgo(p.timestamp) : (dict.time_now || 'الآن')}</small>
+                    <h4 style="margin:0; font-size:16px; cursor:pointer; display:flex; align-items:center; gap:4px; color:var(--text-main);" onclick="window.openProfileSlide('${p.authorId}')">
+                        ${p.authorRole === 'doctor' ? (dict.dr_prefix || 'د. ') : ''}${p.authorName || (dict.default_user_name || 'مستخدم')}
+                        <span class="v-badge-${p.authorId}" style="display:none; color:var(--primary); font-size:17px;"><ion-icon name="checkmark-circle"></ion-icon></span>
+                    </h4>
+                    <small style="color:var(--text-sub); font-size:12px;">${window.timeAgo ? window.timeAgo(p.timestamp) : (dict.time_now || 'الآن')}</small>
                 </div>
             </div>
-           <div style="font-size:15px; line-height:1.6; margin-bottom:10px; color:var(--text-main); word-wrap:break-word;">${window.formatPostContent ? window.formatPostContent(p.content) : p.content}</div>
+           <div style="font-size:15px; line-height:1.7; margin-bottom:10px; color:var(--text-main); word-wrap:break-word;">${window.formatPostContent ? window.formatPostContent(p.content) : p.content}</div>
         </div>
         ${mediaHTML}
-        <div style="padding: 15px; border-bottom: 1px solid var(--border-app);">
-            <div style="display:flex; justify-content:space-between; color:var(--text-sub); font-size:13px; margin-bottom:15px;">
+        
+        <div style="padding: 10px 15px; border-bottom: 1px solid var(--border-app);">
+            <div style="display:flex; justify-content:space-between; color:var(--text-sub); font-size:13px; margin-bottom:15px; padding: 0 5px;">
                 <span onclick="window.showLikes('${pid}')" style="cursor:pointer;">👍 <span class="like-counter-${pid}">${p.likes?.length || 0}</span></span>
                 <span>${commentsDisabled ? (dict.comments_locked || 'التعليقات مقفلة 🔒') : (p.commentsCount || 0) + ' ' + (dict.action_comment || 'تعليق')}</span>
             </div>
-            <div style="display:flex; justify-content:space-around; border-top:1px solid var(--border-app); padding-top:10px;">
-                <button class="action-btn like-btn-${pid} ${isLiked ? 'liked' : ''}" onclick="window.toggleFeedLike('${pid}', this)" style="background:none; border:none; display:flex; align-items:center; gap:5px; font-size:15px; color:${isLiked ? 'var(--danger)' : 'var(--text-sub)'}; cursor:pointer;">
-                    <ion-icon name="${isLiked ? 'heart' : 'heart-outline'}" style="font-size:20px;"></ion-icon> <span data-i18n="action_like">${dict.action_like || 'أعجبني'}</span>
+            
+            <div style="display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--border-app); padding-top: 10px;">
+                <button class="action-btn like-btn-${pid}" onclick="window.toggleFeedLike('${pid}', this)" style="background:none; border:none; display:flex; align-items:center; justify-content:center; gap:8px; font-family:'Cairo'; font-size:15px; color:${likeColor}; cursor:pointer; transition:0.2s; padding: 8px 15px; border-radius:10px; flex:1;">
+                    <ion-icon name="${likeIcon}" style="font-size:20px;"></ion-icon> 
+                    <span data-i18n="action_like">${dict.action_like || 'أعجبني'}</span>
                 </button>
-                <button onclick="document.getElementById('pd-comment-input').focus()" style="background:none; border:none; display:flex; align-items:center; gap:5px; font-size:15px; color:var(--text-sub); cursor:pointer;" ${commentsDisabled ? 'disabled opacity="0.5"' : ''}>
-                    <ion-icon name="chatbubble-outline" style="font-size:20px;"></ion-icon> <span data-i18n="action_comment">${dict.action_comment || 'تعليق'}</span>
+                
+                <button onclick="document.getElementById('pd-comment-input').focus()" ${commentsDisabled ? 'disabled style="opacity:0.4; background:none; border:none; display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'Cairo\'; font-size:15px; color:var(--text-sub); flex:1; padding: 8px 15px;"' : 'style="background:none; border:none; display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'Cairo\'; font-size:15px; color:var(--text-sub); cursor:pointer; transition:0.2s; padding: 8px 15px; border-radius:10px; flex:1;"'}>
+                    <ion-icon name="chatbubble-outline" style="font-size:20px;"></ion-icon> 
+                    <span data-i18n="action_comment">${dict.action_comment || 'تعليق'}</span>
                 </button>
-                <button onclick="window.sharePostFeed('${pid}')" style="background:none; border:none; display:flex; align-items:center; gap:5px; font-size:15px; color:var(--text-sub); cursor:pointer;">
-                    <ion-icon name="share-social-outline" style="font-size:20px;"></ion-icon> <span data-i18n="action_share">${dict.action_share || 'مشاركة'}</span>
+                
+                <button onclick="window.sharePostFeed('${pid}')" style="background:none; border:none; display:flex; align-items:center; justify-content:center; gap:8px; font-family:'Cairo'; font-size:15px; color:var(--text-sub); cursor:pointer; transition:0.2s; padding: 8px 15px; border-radius:10px; flex:1;">
+                    <ion-icon name="share-social-outline" style="font-size:20px;"></ion-icon> 
+                    <span data-i18n="action_share">${dict.action_share || 'مشاركة'}</span>
                 </button>
             </div>
         </div>
     `;
-}// 3. تصميم التعليق (دعم الرد على الردود + اللغات)
+
+    window.verifiedUsersCache = window.verifiedUsersCache || {};
+    if (window.verifiedUsersCache[p.authorId]) {
+        document.querySelectorAll(`.v-badge-${p.authorId}`).forEach(el => el.style.display = 'inline-flex');
+    } else {
+        window.db.collection("users").doc(p.authorId).get().then(doc => {
+            const isVerified = doc.exists && doc.data().isVerified === true;
+            window.verifiedUsersCache[p.authorId] = isVerified;
+            if (isVerified) {
+                document.querySelectorAll(`.v-badge-${p.authorId}`).forEach(el => el.style.display = 'inline-flex');
+            }
+        }).catch(e => console.log(e));
+    }
+} 
+// 3. تصميم التعليق (دعم الرد على الردود + اللغات)
 function generateCommentHTML(c, isReply, parentCommentId) {
     const myUid = window.auth?.currentUser?.uid;
     const isLiked = c.likes && c.likes.includes(myUid);
@@ -355,142 +382,7 @@ window.timeAgo = function(timestamp) {
     if (years >= 3 && years <= 10) return (dict.time_3_10_years || 'منذ ${n} سنوات').replace('${n}', years);
     return (dict.time_years_ago || 'منذ ${n} سنة').replace('${n}', years);
 };
-// ==========================================
-// 🎬 العارض السينمائي الملكي المتكامل (زوم + تحميل + دعم إيماءة الرجوع 📱)
-// ==========================================
 
-// 1. دالة الفتح الرئيسية
-window.openMediaViewer = function(url, isVideo = false) {
-    // إزالة النافذة القديمة إن وجدت
-    const oldViewer = document.getElementById('media-viewer-modal');
-    if(oldViewer) oldViewer.remove();
-
-    // 🚨 لاحظ الـ ID هنا أصبح media-viewer-modal لكي يتعرف عليه زر الرجوع الخاص بالهاتف!
-    const viewerHTML = `
-        <div id="media-viewer-modal" class="chat-media-viewer" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2147483647; display:flex; justify-content:center; align-items:center; flex-direction:column; touch-action:none;">
-            
-            <div class="viewer-top-bar" style="position:absolute; top:calc(env(safe-area-inset-top, 20px) + 10px); right:20px; z-index:10; display:flex; gap:15px;">
-                <button class="viewer-btn" onclick="window.downloadChatMedia('${url}')" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:10px; border-radius:50%; font-size:24px; display:flex;"><ion-icon name="download"></ion-icon></button>
-                <button class="viewer-btn" onclick="window.closeMediaViewer()" style="background:rgba(255, 75, 43, 0.8); border:none; color:white; padding:10px; border-radius:50%; font-size:24px; display:flex;"><ion-icon name="close"></ion-icon></button>
-            </div>
-            
-            ${isVideo ? `<video src="${url}" controls autoplay style="max-width:100%; max-height:80%; border-radius:10px;"></video>` 
-                      : `<img id="viewer-zoom-img" src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; transform-origin:center; touch-action:none; transform: translate(0px, 0px) scale(1);">`}
-            
-            ${!isVideo ? `
-            <div style="position: absolute; bottom: 40px; display: flex; gap: 20px; z-index:10;">
-                <button class="viewer-btn" onclick="window.zoomChatMedia(0.5)" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:10px 20px; border-radius:15px; font-size:24px; display:flex;"><ion-icon name="add"></ion-icon></button>
-                <button class="viewer-btn" onclick="window.zoomChatMedia(-0.5)" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:10px 20px; border-radius:15px; font-size:24px; display:flex;"><ion-icon name="remove"></ion-icon></button>
-            </div>` : ''}
-        </div>`;
-    
-    document.body.insertAdjacentHTML('beforeend', viewerHTML);
-
-    // تفعيل محرك اللمس للصورة
-    if (!isVideo && typeof window.initPinchToZoom === 'function') {
-        window.initPinchToZoom(document.getElementById('viewer-zoom-img'));
-    }
-};
-
-// 2. دالة الإغلاق (التي يبحث عنها زر الرجوع في الهاتف)
-window.closeMediaViewer = function() {
-    const viewer = document.getElementById('media-viewer-modal');
-    if(viewer) viewer.remove();
-};
-
-// 3. محرك اللمس (الزوم بالإصبعين والسحب)
-window.initPinchToZoom = function(img) {
-    if(!img) return;
-    let currentScale = 1, initialScale = 1, initialDistance = 0;
-    let startX = 0, startY = 0, translateX = 0, translateY = 0, initialTranslateX = 0, initialTranslateY = 0;
-
-    const getDistance = (touches) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-
-    const updateTransform = () => {
-        img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
-        img.setAttribute('data-scale', currentScale);
-    };
-
-    img.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
-            initialDistance = getDistance(e.touches);
-            initialScale = currentScale;
-        } else if (e.touches.length === 1) {
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            initialTranslateX = translateX;
-            initialTranslateY = translateY;
-        }
-    });
-
-    img.addEventListener('touchmove', (e) => {
-        e.preventDefault(); 
-        if (e.touches.length === 2) {
-            const currentDistance = getDistance(e.touches);
-            currentScale = initialScale * (currentDistance / initialDistance);
-            if (currentScale > 5) currentScale = 5; 
-            if (currentScale < 1) { currentScale = 1; translateX = 0; translateY = 0; }
-            updateTransform();
-        } else if (e.touches.length === 1 && currentScale > 1) {
-            translateX = initialTranslateX + (e.touches[0].clientX - startX);
-            translateY = initialTranslateY + (e.touches[0].clientY - startY);
-            updateTransform();
-        }
-    });
-
-    img.addEventListener('touchend', (e) => {
-        if (e.touches.length === 0 && currentScale <= 1) {
-            translateX = 0; translateY = 0;
-            updateTransform();
-        }
-    });
-};
-
-// 4. أزرار الزوم اليدوية (+ و -)
-window.zoomChatMedia = function(amount) {
-    const img = document.getElementById('viewer-zoom-img');
-    if (!img) return;
-    let currentScale = parseFloat(img.getAttribute('data-scale')) || 1;
-    currentScale += amount;
-    if (currentScale > 5) currentScale = 5;
-    if (currentScale < 1) currentScale = 1;
-    img.style.transform = `translate(0px, 0px) scale(${currentScale})`;
-    img.setAttribute('data-scale', currentScale);
-};
-
-// 5. محرك التحميل المباشر
-window.downloadChatMedia = async function(url) {
-    const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
-    if(window.showToast) window.showToast(dict.msg_downloading || "جاري التنزيل... ⬇️");
-    try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = "healthmate_media_" + Date.now();
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(blobUrl);
-    } catch(e) {
-        if(window.showToast) window.showToast(dict.alert_download_fail || "تعذر التنزيل المباشر، جرب الفتح في متصفح جديد ❌");
-        window.open(url, '_blank');
-    }
-};
-
-window.closeMediaViewer = function() {
-    const modal = document.getElementById('media-viewer-modal');
-    if(modal) modal.style.display = 'none';
-    
-    const vid = document.getElementById('viewer-video');
-    if(vid) {
-        vid.pause();
-        vid.src = ""; 
-    }
-    const img = document.getElementById('viewer-img');
-    if(img) img.src = "";
-};
 // ============================================================================
 // 🧠 محرك صندوق الوارد الذكي (Smart Inbox Engine)
 // ============================================================================

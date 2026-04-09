@@ -29,13 +29,14 @@ auth.onAuthStateChanged(async (user) => {
                 document.getElementById('user-role').innerText = userRole === 'doctor' ? t.role_doctor : t.role_pharmacist;
             }
 
-            // --- 2. حارس المواعيد (للطبيب فقط 🩺) ---
+        // --- 2. حارس المواعيد (للطبيب الموثق فقط 🩺🛡️) ---
             const appointmentsBtn = document.getElementById('nav-appointments-btn');
             if (appointmentsBtn) {
-                // الحفاظ على المنطق البرمجي مع دعم الرتبة المترجمة أو الأصلية
-                if (userRole === 'doctor' || userRole === 'طبيب') {
+                // يجب أن يكون طبيباً + حسابه موثق (isVerified: true)
+                if ((userRole === 'doctor' || userRole === 'طبيب') && currentUserData.isVerified === true) {
                     appointmentsBtn.style.display = 'flex';
                 } else {
+                    // إذا كان مريضاً، أو صيدلانياً، أو طبيباً متدرباً (غير موثق)، تختفي المواعيد!
                     appointmentsBtn.style.display = 'none';
                 }
             }
@@ -51,22 +52,36 @@ auth.onAuthStateChanged(async (user) => {
             }
 
             if(typeof window.initSmartFeed === 'function') window.initSmartFeed();
-            if(typeof window.loadActiveStories === 'function') window.loadActiveStories();
+           if(document.getElementById('stories-container')) {
+    if(typeof window.loadActiveStories === 'function') window.loadActiveStories();
+}
         }
     }
 });
 
-// ================= دوال الـ SPA المركزية =================
+// ================= دوال الـ SPA المركزية (نظام الطبقات الذكي 🥞) =================
+let globalSpaZIndex = 9999; // عداد الطبقات لحماية النوافذ
+
 window.openSPA = function(slideId) {
     const slide = document.getElementById(slideId);
-    if(slide) { slide.classList.add('active'); document.body.style.overflow = 'hidden'; }
+    if(slide) { 
+        globalSpaZIndex++; // زيادة الرقم لضمان أن النافذة الجديدة دائماً فوق القديمة
+        slide.style.zIndex = globalSpaZIndex; 
+        slide.classList.add('active'); 
+        document.body.style.overflow = 'hidden'; 
+    }
 };
 
 window.closeSPA = function(slideId) {
     const slide = document.getElementById(slideId);
-    if(slide) { slide.classList.remove('active'); document.body.style.overflow = 'auto'; }
+    if(slide) { 
+        slide.classList.remove('active'); 
+        // 🚨 السحر هنا: لا نرجع الشاشة لتعمل Scroll إلا إذا أغلقت كل النوافذ
+        if(document.querySelectorAll('.slide-page.active').length === 0) {
+            document.body.style.overflow = 'auto'; 
+        }
+    }
 };
-
 window.toggleDropdown = function() {
     const menu = document.getElementById('profileDropdown');
     if (menu) menu.classList.toggle('active');
@@ -493,7 +508,7 @@ window.sendNotification = async function(targetUid, type, data = {}) {
         await window.db.collection("users").doc(targetUid).collection("notifications").add({
             fromId: myUser.uid,
             // استخدام اسم المستخدم من البيانات أو القاموس كخيار أخير
-            fromName: myUser.displayName || currentUserData?.name || t.default_user_name || "مستخدم",
+            fromName: currentUserData?.name || myUser.displayName || t.default_user_name || "مستخدم",
             fromImg: myUser.photoURL || currentUserData?.photoURL || "assets/img/profile.png",
             type: type, 
             postId: data.postId || null,
@@ -504,24 +519,80 @@ window.sendNotification = async function(targetUid, type, data = {}) {
         });
     } catch (e) { console.error("Noti Error:", e); }
 };
-// ================= محرك النقطة الحمراء (العداد فوق الجرس) =================
-window.listenToUnreadNotifications = function() {
+// ================= محرك الإشعارات الاحترافي (صوت + بلاكة + اهتزاز) 📱🔊🔔 =================
+window.listenToUnreadNotifications = async function() {
     const myUid = window.auth?.currentUser?.uid;
     const badge = document.getElementById('noti-badge');
+    const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+    
     if(!badge || !myUid) return;
+
+    const { LocalNotifications, Haptics } = window.Capacitor.Plugins;
+    
+    if (LocalNotifications) {
+        // 🚨 1. إنشاء "قناة تنبيه" بأهمية قصوى (مهم جداً للأندرويد) 🚨
+        await LocalNotifications.createChannel({
+            id: 'healthmate_urgent_v2',
+            name: 'تنبيهات هيلث ميت',
+            description: 'قناة لإشعارات الرسائل والتفاعلات المهمة',
+            importance: 5, // أعلى درجة: يصوني ويخرج Banner من الفوق
+            visibility: 1,
+            sound: 'default', // استخدام الصوت الافتراضي للهاتف
+            vibration: true
+        });
+        
+        await LocalNotifications.requestPermissions();
+    }
 
     window.db.collection("users").doc(myUid).collection("notifications")
         .where("isRead", "==", false)
         .onSnapshot(snap => {
+            
+            // تحديث العداد (النقطة الحمراء)
             if (snap.size > 0) {
-                // الرقم هنا يبقى كما هو لأنه لغة عالمية
                 badge.innerText = snap.size > 9 ? "+9" : snap.size;
                 badge.style.display = "flex";
             } else {
                 badge.style.display = "none";
             }
+
+            // معالجة الإشعارات الجديدة فقط
+            snap.docChanges().forEach(async (change) => {
+                if (change.type === "added") {
+                    const n = change.doc.data();
+                    
+                    // تحضير نص الرسالة
+                    let msgBody = dict.noti_new || "لديك إشعار جديد";
+                    if(n.type === 'follow') msgBody = dict.noti_follow || "قام بمتابعتك";
+                    else if(n.type === 'like_post') msgBody = dict.noti_like_post || "أعجب بمنشورك";
+                    else if(n.type === 'comment' || n.type === 'reply') msgBody = dict.noti_comment || "علق على منشورك";
+                    else if(n.type === 'msg') msgBody = "أرسل لك رسالة جديدة 💬";
+
+                    try {
+                        // 📳 الاهتزاز
+                        if (Haptics) await Haptics.vibrate();
+
+                        // 🔔 إرسال التنبيه الفعلي للنظام
+                        if (LocalNotifications) {
+                            await LocalNotifications.schedule({
+                                notifications: [
+                                    {
+                                        title: n.fromName || "Healthmate",
+                                        body: msgBody,
+                                        id: Math.floor(Math.random() * 100000), // ID فريد لكل إشعار
+                                       channelId: 'healthmate_urgent_v2', // 👈 ربط الإشعار بالقناة التي أنشأناها
+                                        schedule: { at: new Date(Date.now() + 200) },
+                                        actionTypeId: "",
+                                        extra: null
+                                    }
+                                ]
+                            });
+                        }
+                    } catch (err) { console.log("Notification error:", err); }
+                }
+            });
         });
-};
+};;
 
 // ================= دالة تحديد الكل كمقروء =================
 window.markAllNotisAsRead = async function() {

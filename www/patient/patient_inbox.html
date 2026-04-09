@@ -59,7 +59,7 @@
 
     <div id="patient-chat-room" class="slide-page" style="display: none; background: var(--bg-color);">
         
-        <div class="slide-header" style="justify-content: space-between;">
+       <div class="slide-header" style="justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.PatientChatSystem.closeChat()"></ion-icon>
                 <img id="p-chat-avatar" src="../assets/img/profile.png" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--blue);">
@@ -69,10 +69,15 @@
                 </div>
             </div>
 
-            <button id="p-chat-access-btn" onclick="window.PatientChatSystem.toggleMedicalAccess()" style="background: var(--purple); color: white; border: none; padding: 5px 10px; border-radius: 8px; font-size: 11px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                <ion-icon name="lock-closed" id="p-access-icon"></ion-icon> 
-                <span id="p-access-text">مشاركة ملفي</span>
-            </button>
+            <div style="display: flex; gap: 8px;">
+                <button id="p-chat-access-btn" onclick="window.PatientChatSystem.toggleMedicalAccess()" style="background: var(--purple); color: white; border: none; padding: 5px 10px; border-radius: 8px; font-size: 11px; display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <ion-icon name="lock-closed" id="p-access-icon"></ion-icon> 
+                    <span id="p-access-text">مشاركة ملفي</span>
+                </button>
+                <button onclick="window.PatientChatSystem.deleteChat()" style="background: rgba(255, 75, 43, 0.15); color: var(--red); border: 1px solid var(--red); padding: 5px 10px; border-radius: 8px; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="حذف المحادثة">
+                    <ion-icon name="trash-outline"></ion-icon>
+                </button>
+            </div>
         </div>
 
         <div id="p-chat-messages" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #0a0a0a;">
@@ -102,7 +107,17 @@
             <button class="hm-btn" onclick="document.getElementById('royal-alert-overlay').style.display='none'" style="width: 100%; margin: 0; background: var(--blue); color: black; font-weight: bold;">حسناً</button>
         </div>
     </div>
-
+<div id="royal-confirm-overlay" class="custom-alert-overlay">
+        <div class="custom-alert-box">
+            <ion-icon name="trash-outline" style="font-size: 50px; color: var(--red); margin-bottom: 10px;"></ion-icon>
+            <h3 id="confirm-title" style="margin: 0 0 10px 0; color: white; font-family: 'Cairo';">تأكيد الحذف</h3>
+            <p id="confirm-msg" style="color: var(--text-sub); font-size: 14px; margin-bottom: 20px; font-family: 'Cairo';"></p>
+            <div style="display: flex; gap: 10px;">
+                <button id="confirm-yes-btn" style="flex: 1; border: none; background: var(--red); color: white; padding: 10px; border-radius: 10px; font-family: 'Cairo'; font-weight: bold; cursor: pointer;">نعم، احذف</button>
+                <button onclick="document.getElementById('royal-confirm-overlay').style.display='none'" style="flex: 1; background: transparent; border: 1px solid var(--text-sub); color: var(--text-sub); padding: 10px; border-radius: 10px; font-family: 'Cairo'; font-weight: bold; cursor: pointer;">إلغاء</button>
+            </div>
+        </div>
+    </div>
     <div id="media-viewer-modal" class="custom-alert-overlay" style="flex-direction: column;">
         <div style="width: 100%; padding: 20px; text-align: left; box-sizing: border-box;">
             <ion-icon name="close-circle" style="color: white; font-size: 35px; cursor: pointer;" onclick="document.getElementById('media-viewer-modal').style.display='none'"></ion-icon>
@@ -140,6 +155,36 @@
             document.getElementById('alert-icon').name = iconName;
             document.getElementById('alert-icon').style.color = color;
             document.getElementById('royal-alert-overlay').style.display = 'flex';
+        };
+       // نافذة التأكيد المحقونة باللغات
+        window.royalConfirm = function(title, msg, confirmText, cancelText) {
+            return new Promise((resolve) => {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                
+                document.getElementById('confirm-title').innerText = title;
+                document.getElementById('confirm-msg').innerText = msg;
+                
+                // ربط الأزرار بالقاموس
+                document.getElementById('confirm-yes-btn').innerText = confirmText || dict.btn_yes_delete || 'نعم، احذف';
+                
+                const noBtn = document.getElementById('confirm-no-btn') || document.querySelector('#royal-confirm-overlay button:nth-child(2)');
+                if(noBtn) noBtn.innerText = cancelText || dict.btn_cancel || 'إلغاء';
+                // (ملاحظة: تأكد أن زر الإلغاء في الـ HTML أضفت له id="confirm-no-btn")
+
+                document.getElementById('royal-confirm-overlay').style.display = 'flex';
+                
+                document.getElementById('confirm-yes-btn').onclick = () => {
+                    document.getElementById('royal-confirm-overlay').style.display = 'none';
+                    resolve(true); 
+                };
+                
+                if(noBtn) {
+                    noBtn.onclick = () => {
+                        document.getElementById('royal-confirm-overlay').style.display = 'none';
+                        resolve(false); 
+                    };
+                }
+            });
         };
         window.openMediaViewer = function(imgUrl) {
             document.getElementById('media-viewer-img').src = imgUrl;
@@ -260,7 +305,33 @@ window.goToPage = function(pageUrl) {
                 document.getElementById('patient-chat-room').style.display = 'none';
                 document.getElementById('chat-slide').style.display = 'flex';
             },
+            
+// 🚨 دالة الحذف المحقونة باللغة 🚨
+            deleteChat: async function() {
+                if (!this.activeChatId) return;
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                
+                // 1. طلب التأكيد من المستخدم
+                const confirmDelete = await window.royalConfirm(
+                    dict.confirm_delete_title || "حذف المحادثة", 
+                    dict.confirm_delete_chat_msg || "هل أنت متأكد من حذف هذه المحادثة بالكامل؟ لا يمكن التراجع عن هذا الإجراء.",
+                    dict.btn_yes_delete || "نعم، احذف",
+                    dict.btn_cancel || "إلغاء"
+                );
+                
+                if (!confirmDelete) return;
 
+                window.showToast(dict.deleting_chat || "جاري حذف المحادثة... 🗑️");
+                
+                try {
+                    await firebase.firestore().collection("chats").doc(this.activeChatId).delete();
+                    window.showToast(dict.chat_deleted_success || "تم حذف المحادثة بنجاح ✅");
+                    this.closeChat(); 
+                } catch (error) {
+                    console.error("Error deleting chat:", error);
+                    window.royalAlert(dict.error_title || "خطأ", dict.error_deleting_chat || "حدث خطأ أثناء محاولة حذف المحادثة.", "warning", "var(--red)");
+                }
+            },
             sendMessage: async function() {
                 if(!this.activeChatId) return;
                 const input = document.getElementById('p-chat-input');
@@ -347,10 +418,11 @@ window.goToPage = function(pageUrl) {
                     });
             },
 
-            watchPrivacyToggle: function() {
+          watchPrivacyToggle: function() {
                 const btn = document.getElementById('p-chat-access-btn');
                 const icon = document.getElementById('p-access-icon');
                 const text = document.getElementById('p-access-text');
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
 
                 this.accessListener = firebase.firestore().collection("chats").doc(this.activeChatId).onSnapshot(doc => {
                     if(!doc.exists) return;
@@ -359,49 +431,53 @@ window.goToPage = function(pageUrl) {
                     if(hasAccess) {
                         btn.style.background = "var(--red)";
                         icon.name = "lock-open";
-                        text.innerText = "إلغاء مشاركة الملف";
+                        text.innerText = dict.revoke_medical_access || "إلغاء مشاركة الملف";
                     } else {
                         btn.style.background = "var(--purple)";
                         icon.name = "lock-closed";
-                        text.innerText = "مشاركة ملفي";
+                        text.innerText = dict.share_medical_access || "مشاركة ملفي";
                     }
                 });
             },
 
-            toggleMedicalAccess: async function() {
+        toggleMedicalAccess: async function() {
                 if(!this.activeChatId) return;
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
                 const chatRef = firebase.firestore().collection("chats").doc(this.activeChatId);
                 const doc = await chatRef.get();
                 const current = doc.data().medicalAccess === true;
                 
                 await chatRef.update({ medicalAccess: !current });
-                window.showToast(!current ? "تم منح الطبيب صلاحية الدخول لملفك ✅" : "تم سحب الصلاحية 🔒");
-            }
+                window.showToast(!current ? (dict.access_granted || "تم منح الطبيب صلاحية الدخول لملفك ✅") : (dict.access_revoked || "تم سحب الصلاحية 🔒"));
+            },
         };
 
-        // 5. التشغيل التلقائي عند فتح الصفحة واستقبال النقل من صفحة الأطباء 🎯
+       // 5. التشغيل التلقائي واستقبال النقل الذكي من البروفايل 🎯
         document.addEventListener('DOMContentLoaded', () => {
             firebase.auth().onAuthStateChanged((user) => {
                 if(user) {
-                    // التحقق من الذاكرة (هل ضغط المريض على 'مراسلة' من صفحة الأطباء؟)
-                    const targetUid = localStorage.getItem('chat_target_uid');
+                    // 1. العسّاس: يحوس هل المريض كليكا على "مراسلة" في بروفايل طبيب؟
+                    const pendingChatStr = localStorage.getItem('pending_patient_chat');
                     
-                    if (targetUid) {
-                        // جلب باقي البيانات وفتح الغرفة مباشرة!
-                        const targetName = localStorage.getItem('chat_target_name') || 'طبيب';
-                        const targetImg = localStorage.getItem('chat_target_img') || '../assets/img/profile.png';
+                    if (pendingChatStr) {
+                        try {
+                            const docData = JSON.parse(pendingChatStr);
+                            
+                            // 2. إذا لقى أمر الفتح التلقائي (autoOpen)، يفتح الشات ديريكت!
+                            if (docData.autoOpen) {
+                                window.PatientChatSystem.openRoom(docData.id, docData.name, docData.img);
+                                
+                                // 3. يمسح الذاكرة باش كي دير Actualiser ما تعاودش تفتح وحدها
+                                localStorage.removeItem('pending_patient_chat');
+                            }
+                        } catch (e) { 
+                            console.error("خطأ في قراءة بيانات الشات:", e); 
+                        }
                         
-                        window.PatientChatSystem.openRoom(targetUid, targetName, targetImg);
-                        
-                        // مسح الذاكرة لكي لا يفتحها تلقائياً المرة القادمة
-                        localStorage.removeItem('chat_target_uid');
-                        localStorage.removeItem('chat_target_name');
-                        localStorage.removeItem('chat_target_img');
-                        
-                        // مع ذلك، نُحمّل الإنبوكس في الخلفية استعداداً لو ضغط رجوع
+                        // نحملوا الانبوكس في الخلفية باش كي يدير "رجوع" يلقى رسائلو واجدين
                         window.patientInboxManager.loadConsultations();
                     } else {
-                        // المستخدم فتح الصفحة بشكل طبيعي، نعرض الإنبوكس
+                        // 4. إذا دخل لصفحة الرسائل نورمال (من القائمة)، نعرضولو الانبوكس برك
                         window.patientInboxManager.loadConsultations();
                     }
                 }

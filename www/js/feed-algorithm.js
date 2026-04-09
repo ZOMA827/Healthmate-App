@@ -98,7 +98,6 @@ function renderNextPostBatch() {
     const myUid = window.auth.currentUser.uid;
     const nextPosts = allRankedPosts.slice(displayedPostsCount, displayedPostsCount + POSTS_PER_PAGE);
 
-    // جلب القاموس الحالي مع الحفاظ على القيم الافتراضية (الكسر مقدس)
     const currentLang = localStorage.getItem('app_lang') || 'ar';
     const dict = (window.translations && window.translations[currentLang]) ? window.translations[currentLang] : {
         opt_edit: "تعديل المنشور", opt_lock_comments: "إيقاف التعليقات", opt_unlock_comments: "تفعيل التعليقات",
@@ -108,14 +107,16 @@ function renderNextPostBatch() {
         msg_report_sent: "تم إرسال بلاغ للإدارة", default_user_name: "مستخدم", dr_prefix: "د. "
     };
 
+    // 🚨 إنشاء كاش (Cache) لحفظ حالة التوثيق للأطباء لتقليل الضغط على قاعدة البيانات وتسريع التطبيق
+    window.verifiedUsersCache = window.verifiedUsersCache || {};
+
     nextPosts.forEach(post => {
         const isLiked = post.likes && post.likes.includes(myUid);
         const isMyPost = post.authorId === myUid;
         const commentsDisabled = post.commentsDisabled || false;
         
-        // 🎬 دمج الشاشة السينمائية للصور والفيديوهات بذكاء
         let mediaHTML = '';
-        if(post.mediaUrl) {
+        if(post.mediaUrl && post.mediaUrl !== "null" && post.mediaUrl !== "undefined" && post.mediaUrl.trim() !== "") {
             const isVideo = post.mediaUrl.match(/\.(mp4|webm|ogg|mov)/i) || post.mediaUrl.includes('video/upload');
             if (isVideo) {
                 mediaHTML = `
@@ -126,11 +127,10 @@ function renderNextPostBatch() {
                     <ion-icon name="play-circle" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:60px; color:rgba(255,255,255,0.9); text-shadow:0 5px 15px rgba(0,0,0,0.5); z-index:2;"></ion-icon>
                 </div>`;
             } else {
-                mediaHTML = `<img src="${post.mediaUrl}" onclick="window.openMediaViewer('${post.mediaUrl}')" class="post-img" style="cursor: pointer; width:100%; border-radius:15px; object-fit:cover; margin-top:10px;">`;
+               mediaHTML = `<img src="${post.mediaUrl}" onclick="window.openMediaViewer('${post.mediaUrl}', '${post.id}')" class="post-img" style="cursor: pointer; width:100%; border-radius:15px; object-fit:cover; margin-top:10px;">`;
             }
         }
 
-        // قائمة الخيارات (مترجمة بالكامل)
         let optionsMenuHTML = isMyPost ? `
             <button onclick="window.openEditPostModal('${post.id}', \`${post.content ? post.content.replace(/`/g, '\\`') : ''}\`)"><ion-icon name="create-outline"></ion-icon> <span>${dict.opt_edit}</span></button>
             <button onclick="window.toggleFeedCommentsStatus('${post.id}', ${commentsDisabled})"><ion-icon name="${commentsDisabled ? 'chatbubbles' : 'lock-closed-outline'}"></ion-icon> <span>${commentsDisabled ? dict.opt_unlock_comments : dict.opt_lock_comments}</span></button>
@@ -141,12 +141,16 @@ function renderNextPostBatch() {
             <button onclick="window.showToast('${dict.msg_report_sent}')"><ion-icon name="flag-outline"></ion-icon> <span>${dict.opt_report}</span></button>
         `;
 
+        // 🚨 السحر هنا: دمج شارة التوثيق الذكية بجانب الاسم (مخفية افتراضياً)
         const postHTML = `
             <div class="post-card" id="feed-post-${post.id}">
                 <div class="post-header">
                     <img src="${post.authorImg || 'assets/img/profile.png'}" onclick="window.openSPA('profileSlidePage'); window.openProfileSlide('${post.authorId}')" style="cursor:pointer;">
                     <div>
-                        <h4 onclick="window.openSPA('profileSlidePage'); window.openProfileSlide('${post.authorId}')" style="cursor:pointer;">${post.authorRole === 'doctor' ? (dict.dr_prefix || 'د. ') : ''}${post.authorName || (dict.default_user_name || 'مستخدم')}</h4>
+                        <h4 onclick="window.openSPA('profileSlidePage'); window.openProfileSlide('${post.authorId}')" style="cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
+                            ${post.authorRole === 'doctor' ? (dict.dr_prefix || 'د. ') : ''}${post.authorName || (dict.default_user_name || 'مستخدم')}
+                            <span class="v-badge-${post.authorId}" style="display:none; color:var(--primary); font-size:16px;"><ion-icon name="checkmark-circle"></ion-icon></span>
+                        </h4>
                         <div class="post-time">${window.timeAgo ? window.timeAgo(post.timestamp) : 'الآن'}</div>
                     </div>
                     <div class="post-options">
@@ -158,9 +162,7 @@ function renderNextPostBatch() {
                     </div>
                 </div>
                 
-                <div class="post-body" onclick="window.openSPA('postDetailsSlidePage'); window.openPostDetailsSlide('${post.id}')" style="cursor: pointer;">
-                    ${window.formatFeedContent ? window.formatFeedContent(post.content, post.id) : post.content}
-                </div>
+             <div class="post-body" onclick="window.openSPA('postDetailsSlidePage'); window.openPostDetailsSlide('${post.id}')" style="cursor: pointer;">${post.content ? (window.formatFeedContent ? window.formatFeedContent(post.content.trim(), post.id) : post.content.trim()) : ''}</div>
                 ${mediaHTML}
                 
                 <div class="post-stats">
@@ -182,6 +184,22 @@ function renderNextPostBatch() {
             </div>
         `;
         container.insertAdjacentHTML('beforeend', postHTML);
+
+        // 🚨 تشغيل الفحص الذكي لحالة التوثيق
+        if (window.verifiedUsersCache[post.authorId] === undefined) {
+            // إذا لم يكن في الذاكرة، نسأل القاعدة مرة واحدة فقط!
+            window.db.collection("users").doc(post.authorId).get().then(doc => {
+                const isVerified = doc.exists && doc.data().isVerified === true;
+                window.verifiedUsersCache[post.authorId] = isVerified;
+                if (isVerified) {
+                    // إظهار العلامة الزرقاء في كل منشورات هذا الطبيب الموجودة بالشاشة فوراً
+                    document.querySelectorAll(`.v-badge-${post.authorId}`).forEach(el => el.style.display = 'inline-flex');
+                }
+            }).catch(e => console.log(e));
+        } else if (window.verifiedUsersCache[post.authorId]) {
+            // إذا كان في الذاكرة وموثق، نظهر العلامة مباشرة بدون انتظار!
+            document.querySelectorAll(`.v-badge-${post.authorId}`).forEach(el => el.style.display = 'inline-flex');
+        }
     });
 
     if(typeof window.applyLanguage === 'function') {

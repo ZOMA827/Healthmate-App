@@ -464,6 +464,17 @@ window.triggerLocalNotification = async function(medName, daysRemaining, index, 
         const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
         await LocalNotifications.requestPermissions();
 
+        // 🚨 1. إنشاء قناة تنبيهات "طوارئ" خاصة بالأدوية بأعلى أهمية 🚨
+        await LocalNotifications.createChannel({
+            id: 'healthmate_meds_urgent', // اسم القناة
+            name: 'تنبيهات الأدوية',
+            description: 'تنبيهات ضرورية لمواعيد ونفاد الأدوية',
+            importance: 5, // 👈 السر هنا: 5 تعني انبثاق (Pop-up) إجباري!
+            visibility: 1,
+            sound: 'default',
+            vibration: true
+        });
+
         let title = dict.med_alert_title || "تنبيه صحي هام ⚠️";
         let body = daysRemaining > 0 
             ? `دواء (${medName}) قارب على الانتهاء، متبقي ${daysRemaining} أيام فقط!`
@@ -475,13 +486,14 @@ window.triggerLocalNotification = async function(medName, daysRemaining, index, 
                     title: title,
                     body: body,
                     id: index + 1000, 
-                    schedule: { at: new Date(Date.now() + 1000 * 5) }, // 🔔 سيرن الهاتف بعد 5 ثواني بالضبط!
+                    channelId: 'healthmate_meds_urgent', // 🚨 2. ربط الإشعار بالقناة المنبثقة 🚨
+                    schedule: { at: new Date(Date.now() + 200) }, // يوصل في ربع ثانية
                     sound: null, 
                 }
             ]
         });
 
-        window.notifiedMedsSession[index] = true; // تسجيل أنه تم التنبيه
+        window.notifiedMedsSession[index] = true; 
     } catch(e) {
         console.error("Notification Error: ", e);
     }

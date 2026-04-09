@@ -7,37 +7,80 @@ let profilePostsListener = null;
 
 // 1. الدالة المركزية للفتح وتحديد الهوية
 window.openProfileSlide = async function(targetUid) {
-    const myUid = window.auth.currentUser.uid;
+    const myUser = window.auth?.currentUser;
+    if (!myUser) return;
+    const myUid = myUser.uid;
+    
     currentViewedId = targetUid || myUid;
     const isMe = (currentViewedId === myUid);
-
+    
     window.openSPA('profileSlidePage');
-    resetProfileUI(); // هذا السطر الآن سيخفي أزرار المناوبة كإجراء افتراضي
+    
+    // 🚨 استدعاء آمن لتصفير الواجهة
+    if(typeof resetProfileUI === 'function') resetProfileUI(); 
 
     const currentLang = localStorage.getItem('app_lang') || 'ar';
-    const dict = (window.translations && window.translations[currentLang]) ? window.translations[currentLang] : { follow_btn: "متابعة", unfollow_btn: "إلغاء المتابعة", edit_profile_title: "تعديل", msg_btn: "مراسلة" };
+    const dict = (window.translations && window.translations[currentLang]) ? window.translations[currentLang] : { follow_btn: "متابعة", unfollow_btn: "إلغاء المتابعة", edit_profile_title: "تعديل", msg_btn: "مراسلة", role_patient: "مريض", opt_copy_link: "نسخ رابط الملف 📋", opt_block_user: "حظر المستخدم 🚫" };
 
     // ================= جلب البيانات الأساسية للبروفايل =================
     let uData = {};
     try {
         const userDoc = await window.db.collection("users").doc(currentViewedId).get();
         if (userDoc.exists) uData = userDoc.data();
+        
+        // ========================================================
+        // 🚨 الجراحة الجديدة: نظام توجيه البروفايلات (مريض / طبيب)
+        // ========================================================
+        const myDoc = await window.db.collection("users").doc(myUid).get();
+        const myData = myDoc.data() || {};
+        
+        const targetRole = String(uData.role || '').toLowerCase();
+        const myRole = String(myData.role || '').toLowerCase();
+        const iAmPatient = myRole.includes('patient') || myRole.includes('مريض');
+
+        // إذا كنت أنا مريض
+        if (iAmPatient) {
+            // التحقق من وجود حاوية المريض لكي لا نؤثر على أي صفحة أخرى
+            const patientContainer = document.getElementById('profile-container-body');
+            if (patientContainer) {
+                if (isMe) {
+                    // 1. المريض يرى بروفايله الشخصي
+                    window.renderPatientSelfProfile(uData, dict);
+                } else {
+                    // 2. المريض يرى بروفايل طبيب/صيدلي
+                    window.renderDoctorProfileForPatient(uData, dict, myUid);
+                }
+                return; // 🛑 نتوقف هنا لكي لا ينفذ كود الأطباء القديم
+            }
+        }
+        // ========================================================
     } catch(e) { console.error("Error fetching user data:", e); }
     
-    const isPrivate = uData.isPrivate || false;
+    // =======================================================================
+    // 👇 كود الأطباء والصيادلة الأصلي (محمي 100% ولا يعمل إذا كان المستخدم مريضاً) 👇
+    // =======================================================================
     const actionArea = document.getElementById('pro-actions');
+    if (!actionArea) return; // حماية إضافية من الانهيار
 
-    // ================= 🚨 الذكاء هنا: إظهار أزرار المناوبة والرادار في بروفايلي فقط! 🚨 =================
+    const isPrivate = uData.isPrivate || false;
+
+    // ================= 🚨 إظهار أزرار المناوبة والرادار في بروفايلي فقط! 🚨 =================
     if (isMe) {
-        document.getElementById('pro-edit-pic-btn').style.display = 'flex';
+        const picBtn = document.getElementById('pro-edit-pic-btn');
+        if(picBtn) picBtn.style.display = 'flex';
         
-        // --- إظهار أدوات الطبيب/الصيدلي إذا كان البروفايل لي ---
-        if (uData.role === 'doctor' || uData.role === 'pharmacist') {
+        // إرجاع الأقسام في حال كانت مخفية سابقاً
+        document.querySelector('.pro-stats')?.setAttribute('style', 'display: flex');
+        document.querySelector('.pro-tabs')?.setAttribute('style', 'display: flex');
+        document.querySelector('.pro-content-area')?.setAttribute('style', 'display: block');
+        if(document.getElementById('pro-bio')) document.getElementById('pro-bio').style.display = 'block';
+
+        // --- إظهار أدوات الطبيب/الصيدلي (فقط إذا كان موثقاً 🛡️) ---
+        if ((uData.role === 'doctor' || uData.role === 'pharmacist') && uData.isVerified === true) {
             const dutySec = document.getElementById('night-duty-section');
             const btn = document.getElementById('night-duty-btn');
             if (dutySec) dutySec.style.display = 'flex';
             
-            // ضبط لون زر المناوبة حسب حالتي
             if (uData.isNightDuty === true && btn) {
                 btn.innerHTML = dict.stop_duty || 'إيقاف المناوبة 🛑';
                 btn.style.background = 'rgba(255, 75, 43, 0.2)';
@@ -47,12 +90,12 @@ window.openProfileSlide = async function(targetUid) {
                 btn.innerHTML = dict.start_duty || 'تفعيل المناوبة ✅';
                 btn.style.background = 'var(--card-bg)';
                 btn.style.borderColor = 'var(--border-color)';
-                btn.style.color = 'white';
+                btn.style.color = 'var(--text-main)';
             }
         }
         
-        // --- إظهار رادار الأدوية إذا كنت صيدلي وهذا بروفايلي ---
-        if (uData.role === 'pharmacist') {
+        // --- إظهار رادار الأدوية إذا كنت صيدلي موثق ---
+        if (uData.role === 'pharmacist' && uData.isVerified === true) {
             const radarSec = document.getElementById('pharmacist-radar-section');
             if (radarSec) {
                 radarSec.style.display = 'block';
@@ -60,20 +103,29 @@ window.openProfileSlide = async function(targetUid) {
             }
         }
 
-        // أزرار البروفايل الشخصي (تعديل، إعدادات...)
+        // --- 🚨 منطق زر التوثيق الذكي 🚨 ---
+        const isVerified = uData.isVerified === true;
+        let verifyBtnHtml = '';
+        if (isVerified) {
+            verifyBtnHtml = `<button style="cursor:default; opacity:0.8;"><ion-icon name="checkmark-circle" style="color:var(--success);"></ion-icon> <span style="color:var(--success);">${dict.opt_verified || 'حساب موثق ✅'}</span></button>`;
+        } else {
+            verifyBtnHtml = `<button onclick="window.openSPA('verificationSlidePage'); document.getElementById('pro-options-menu').classList.remove('active');"><ion-icon name="shield-checkmark-outline" style="color:var(--blue);"></ion-icon> <span style="color:var(--blue);">${dict.opt_verify_acc || 'توثيق الحساب 🛡️'}</span></button>`;
+        }
+
+        // --- أزرار البروفايل الشخصي ---
         actionArea.innerHTML = `
             <button class="pro-btn pro-btn-outline" onclick="window.openEditProfileModal()">
-                <span data-i18n="edit_profile_title">${dict.edit_profile_title || 'تعديل'}</span>
-            </button>
-            <button class="pro-btn pro-btn-outline" onclick="window.openSPA('settingsSlidePage')">
-                <ion-icon name="settings-outline"></ion-icon> <span>${dict.nav_settings || 'الإعدادات'}</span>
+                <span data-i18n="edit_profile_title">${dict.edit_profile_title || 'تعديل الملف المهني'}</span>
             </button>
             <div style="position: relative; display: flex;">
                 <button class="pro-btn pro-btn-outline" style="padding: 0 15px; display: flex; justify-content: center; align-items: center; height: 100%; cursor: pointer;" onclick="event.stopPropagation(); document.getElementById('pro-options-menu').classList.toggle('active')">
                     <ion-icon name="ellipsis-horizontal" style="font-size: 28px;"></ion-icon>
                 </button>
                 <div id="pro-options-menu" class="options-menu" style="top: 115%; left: 0; width: 220px; z-index: 1001;">
-                    <button onclick="window.toggleAccountPrivacy(${isPrivate})">
+                    <button onclick="window.openSPA('settingsSlidePage'); document.getElementById('pro-options-menu').classList.remove('active');">
+                        <ion-icon name="settings-outline"></ion-icon> <span>${dict.nav_settings || 'الإعدادات'}</span>
+                    </button>
+                    ${verifyBtnHtml} <button onclick="window.toggleAccountPrivacy(${isPrivate})">
                         <ion-icon name="${isPrivate ? 'earth-outline' : 'lock-closed-outline'}"></ion-icon> 
                         <span>${isPrivate ? (dict.opt_public_acc || 'جعل الحساب عام 🌍') : (dict.opt_private_acc || 'جعل الحساب خاص 🔒')}</span>
                     </button>
@@ -83,11 +135,74 @@ window.openProfileSlide = async function(targetUid) {
                 </div>
             </div>
         `;
-    } else {
-        // إذا كان بروفايل شخص آخر، لا نظهر له أزراري السرية!
-        document.getElementById('pro-edit-pic-btn').style.display = 'none';
-        
+    }else {
         // أزرار التفاعل مع الآخرين
+        const picBtn = document.getElementById('pro-edit-pic-btn');
+        if(picBtn) picBtn.style.display = 'none';
+
+        // ========================================================
+        // 🚨 منطق جديد: ماذا لو كان هذا الشخص المفتوح بروفايله مريضاً؟ 🚨
+        // ========================================================
+        const targetRole = String(uData.role || '').toLowerCase();
+        if (targetRole.includes('patient') || targetRole.includes('مريض')) {
+            
+            // 1. إخفاء الإحصائيات والتبويبات والمنشورات لأن المريض لا يملكها
+            document.querySelector('.pro-stats')?.setAttribute('style', 'display: none !important');
+            document.querySelector('.pro-tabs')?.setAttribute('style', 'display: none !important');
+            document.querySelector('.pro-content-area')?.setAttribute('style', 'display: none !important');
+            if(document.getElementById('pro-bio')) document.getElementById('pro-bio').style.display = 'none';
+            
+            // 2. تحديث الرتبة وإضافة رقم الهاتف
+            const roleEl = document.getElementById('pro-role');
+            if(roleEl) {
+                const patientPhone = uData.phone 
+                    ? `<div style="margin-top: 8px; color: var(--text-main); font-size: 15px; font-family: 'Cairo';"><ion-icon name="call-outline" style="vertical-align: middle; color: var(--primary); margin-left: 5px;"></ion-icon><span dir="ltr">${uData.phone}</span></div>` 
+                    : `<div style="margin-top: 8px; color: var(--text-sub); font-size: 13px;">لا يوجد رقم هاتف</div>`;
+                
+                roleEl.innerHTML = `
+                    <span style="color:var(--text-sub); font-weight:bold; font-size:15px;">${dict.role_patient || 'مريض'}</span>
+                    ${patientPhone}
+                `;
+            }
+
+            // 3. عرض زر المراسلة العريض والقائمة فقط
+            actionArea.innerHTML = `
+                <button class="pro-btn pro-btn-msg" style="flex: 1; display:flex; justify-content:center; align-items:center; gap:8px; border-radius:20px; font-family:'Cairo'; font-weight:bold;" onclick="window.openChatFromProfile()">
+                    <ion-icon name="chatbubble-ellipses-outline" style="font-size: 22px;"></ion-icon>
+                    <span>${dict.msg_btn || 'مراسلة'}</span>
+                </button>
+                
+                <div style="position: relative; display: flex;">
+                    <button class="pro-btn pro-btn-outline" style="padding: 0 15px; display: flex; justify-content: center; align-items: center; height: 100%; cursor: pointer;" onclick="event.stopPropagation(); document.getElementById('pro-options-menu').classList.toggle('active')">
+                        <ion-icon name="ellipsis-horizontal" style="font-size: 28px;"></ion-icon>
+                    </button>
+                    <div id="pro-options-menu" class="options-menu" style="top: 115%; left: 0; width: 220px; z-index: 1001;">
+                        <button onclick="window.copyProfileLink('${currentViewedId}')">
+                            <ion-icon name="link-outline"></ion-icon> <span>${dict.opt_copy_link || 'نسخ رابط الملف 📋'}</span>
+                        </button>
+                        <button onclick="window.blockUser('${currentViewedId}', '${uData.name?.replace(/'/g, "\\'") || (dict.default_user || 'المستخدم')}')" style="color: var(--danger);">
+                            <ion-icon name="ban-outline"></ion-icon> <span>${dict.opt_block_user || 'حظر المستخدم 🚫'}</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // جلب البيانات الأساسية وتخطي الإحصائيات
+            if(typeof fetchProfileData === 'function') await fetchProfileData(currentViewedId);
+            setTimeout(() => { if(typeof window.applyLanguage === 'function') window.applyLanguage(); }, 50);
+            return; 
+        }
+
+        // ========================================================
+        // --- إذا كان بروفايل طبيب يرى طبيب/صيدلي آخر ---
+        // ========================================================
+        
+        // إرجاع الإحصائيات المخفية
+        document.querySelector('.pro-stats')?.setAttribute('style', 'display: flex');
+        document.querySelector('.pro-tabs')?.setAttribute('style', 'display: flex');
+        document.querySelector('.pro-content-area')?.setAttribute('style', 'display: block');
+        if(document.getElementById('pro-bio')) document.getElementById('pro-bio').style.display = 'block';
+
         actionArea.innerHTML = `
             <button id="pro-follow-btn" class="pro-btn pro-btn-primary" onclick="window.toggleFollow()"><span>${dict.follow_btn}</span></button>
             <button class="pro-btn pro-btn-msg" onclick="window.openChatFromProfile()">
@@ -108,36 +223,43 @@ window.openProfileSlide = async function(targetUid) {
                 </div>
             </div>
         `;
-        checkFollowStatus(myUid, currentViewedId, dict);
+        if(typeof checkFollowStatus === 'function') checkFollowStatus(myUid, currentViewedId, dict);
     }
 
-    await fetchProfileData(currentViewedId);
-    setupRealtimeStats(currentViewedId);
-    window.switchProTab('tab-posts', document.querySelector('.pro-tab'));
+    if(typeof fetchProfileData === 'function') await fetchProfileData(currentViewedId);
+    if(typeof setupRealtimeStats === 'function') setupRealtimeStats(currentViewedId);
+    const tabBtn = document.querySelector('.pro-tab');
+    if(tabBtn && typeof window.switchProTab === 'function') window.switchProTab('tab-posts', tabBtn);
     
     setTimeout(() => {
         if(typeof window.applyLanguage === 'function') window.applyLanguage();
     }, 50);
 };
-
-// 2. تصفير الواجهة (Reset UI) - تم إضافة إخفاء الأقسام السرية هنا
+// 2. تصفير الواجهة (Reset UI) - 🚨 هنا كان الخطأ، أضفنا حماية ضد تحطم المتصفح 🚨
 function resetProfileUI() {
-    document.getElementById('pro-name').innerText = "...";
-    document.getElementById('pro-pic').src = "assets/img/profile.png";
-    document.getElementById('pro-bio').innerText = "";
-    document.getElementById('pro-posts-container').innerHTML = "";
-    document.getElementById('pro-media-container').innerHTML = "";
+    const nameEl = document.getElementById('pro-name');
+    if (nameEl) nameEl.innerText = "...";
     
-    // 🚨 تأمين: إخفاء الأزرار السرية كوضع افتراضي قبل فتح أي بروفايل
+    const picEl = document.getElementById('pro-pic');
+    if (picEl) picEl.src = "assets/img/profile.png";
+    
+    const bioEl = document.getElementById('pro-bio');
+    if (bioEl) bioEl.innerText = "";
+    
+    const postsCont = document.getElementById('pro-posts-container');
+    if (postsCont) postsCont.innerHTML = "";
+    
+    const mediaCont = document.getElementById('pro-media-container');
+    if (mediaCont) mediaCont.innerHTML = "";
+    
     const dutySec = document.getElementById('night-duty-section');
     const radarSec = document.getElementById('pharmacist-radar-section');
     if (dutySec) dutySec.style.display = 'none';
     if (radarSec) radarSec.style.display = 'none';
 
-    if(profilePostsListener) profilePostsListener(); 
+    if(typeof profilePostsListener === 'function') profilePostsListener(); 
 }
-
-// 3. جلب بيانات فايربيس
+// 3. جلب بيانات فايربيس (مصححة 100% لتمييز المريض)
 async function fetchProfileData(uid) {
     const dict = window.translations[localStorage.getItem('app_lang') || 'ar'] || {};
     try {
@@ -145,13 +267,37 @@ async function fetchProfileData(uid) {
         if (doc.exists) {
             const u = doc.data();
             
-            // تحديث المعلومات الأساسية
-            if(document.getElementById('pro-name')) document.getElementById('pro-name').innerText = u.name || (dict.default_user || "مستخدم");
+            // تحديث المعلومات الأساسية (الصورة والنبذة)
             if(document.getElementById('pro-pic')) document.getElementById('pro-pic').src = u.photoURL || "assets/img/profile.png";
-            if(document.getElementById('pro-role')) document.getElementById('pro-role').innerText = u.role === 'doctor' ? (dict.role_doctor || 'طبيب') : (dict.role_pharmacist || 'صيدلي');
             if(document.getElementById('pro-bio')) document.getElementById('pro-bio').innerText = u.bio || "";
             
-            // تحديث قسم (حول / About) - أضفنا الـ IDs والبيانات الناقصة
+            const roleEl = document.getElementById('pro-role');
+            const nameEl = document.getElementById('pro-name');
+
+            if (roleEl && nameEl) {
+                // 🚨 1. قراءة رتبة المستخدم الحقيقية
+                const targetRole = String(u.role || '').toLowerCase();
+                
+                // 🚨 2. إذا كان المفتوح هو مريض 🚨
+                if (targetRole.includes('patient') || targetRole.includes('مريض')) {
+                    roleEl.innerHTML = `<span style="color:var(--text-sub); font-weight:bold; font-size:15px;">${dict.role_patient || 'مريض'}</span>`;
+                    nameEl.innerText = u.name || (dict.default_user || "مستخدم");
+                } 
+                // 🚨 3. إذا كان المفتوح طبيباً أو صيدلياً 🚨
+                else {
+                    const isVerified = u.isVerified === true;
+                    if (isVerified) {
+                        const roleText = u.role === 'doctor' ? (dict.role_doctor || 'طبيب') : (dict.role_pharmacist || 'صيدلي');
+                        roleEl.innerHTML = `<span style="color:var(--primary); font-weight:bold;">${roleText}</span>`;
+                        nameEl.innerHTML = `${u.name || (dict.default_user || 'مستخدم')} <ion-icon name="checkmark-circle" style="color:var(--primary); font-size:20px; vertical-align:middle; margin-right:5px;"></ion-icon>`;
+                    } else {
+                        roleEl.innerHTML = `<span style="color:var(--text-sub); opacity:0.8;">${dict.role_trainee || 'متدرب 🎓'}</span>`;
+                        nameEl.innerText = u.name || (dict.default_user || "مستخدم");
+                    }
+                }
+            }
+            
+            // تحديث قسم (حول / About)
             if(document.getElementById('pro-about-card')) {
                 document.getElementById('pro-about-card').innerHTML = `
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; color:var(--text-main);">
@@ -159,19 +305,16 @@ async function fetchProfileData(uid) {
                         <strong>${dict.lbl_specialty || 'التخصص:'}</strong> 
                         <span id="pro-specialty">${u.specialty || (dict.general_specialty || 'عام')}</span>
                     </div>
-                    
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; color:var(--text-main);">
                         <ion-icon name="location" style="color:var(--primary); font-size:20px;"></ion-icon> 
                         <strong>${dict.lbl_location || 'العنوان:'}</strong> 
                         <span id="pro-location">${u.locationLink || u.location || (dict.not_specified || 'غير محدد')}</span>
                     </div>
-                    
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; color:var(--text-main);">
                         <ion-icon name="call" style="color:var(--primary); font-size:20px;"></ion-icon> 
                         <strong>${dict.lbl_phone || 'الهاتف:'}</strong> 
                         <span id="pro-phone" dir="ltr">${u.phone || '---'}</span>
                     </div>
-
                     <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; color:var(--text-main);">
                         <ion-icon name="time" style="color:var(--primary); font-size:20px;"></ion-icon> 
                         <strong>${dict.lbl_hours || 'ساعات العمل:'}</strong> 
@@ -192,31 +335,39 @@ let profileFollowersListener = null;
 let profileFollowingListener = null;
 
 function setupRealtimeStats(uid) {
-    // 🚨 الجراحة السحرية: إيقاف الرادارات القديمة قبل فتح بروفايل جديد 🚨
+    // 1. تنظيف الرادارات القديمة
     if (profileFollowersListener) profileFollowersListener();
     if (profileFollowingListener) profileFollowingListener();
 
-    // تشغيل رادار المتابعين
+    // 2. رادار المتابعين (يحدث الرقم في الزر المقسوم أو البروفايل القديم)
     profileFollowersListener = window.db.collection("users").doc(uid).collection("followers").onSnapshot(s => {
         const el = document.getElementById('pro-followers-count');
         if (el) el.innerText = s.size;
     });
 
-    // تشغيل رادار من أتابعهم
+    // 3. رادار من أتابعهم
     profileFollowingListener = window.db.collection("users").doc(uid).collection("following").onSnapshot(s => {
         const el = document.getElementById('pro-following-count');
         if (el) el.innerText = s.size;
     });
 
-    // إعداد أزرار فتح القوائم
-    const followersBtn = document.getElementById('pro-followers-count').parentElement;
-    const followingBtn = document.getElementById('pro-following-count').parentElement;
-    
-    followersBtn.style.cursor = 'pointer';
-    followingBtn.style.cursor = 'pointer';
+    // 🚨 الجراحة الذكية: تفعيل الضغط فقط إذا كانت النافذة موجودة 🚨
+    const followersBtn = document.getElementById('pro-followers-count');
+    const usersModal = document.getElementById('usersListModal'); // نتحقق إذا النافذة موجودة في الـ HTML
 
-    followersBtn.onclick = () => window.openUsersList(uid, 'followers');
-    followingBtn.onclick = () => window.openUsersList(uid, 'following');
+    if (followersBtn && followersBtn.parentElement) {
+        const parent = followersBtn.parentElement;
+
+        if (usersModal) {
+            // إذا كانت النافذة موجودة (عند الأطباء)، نجعل الزر قابلاً للضغط
+            parent.style.cursor = 'pointer';
+            parent.onclick = () => window.openUsersList(uid, 'followers');
+        } else {
+            // إذا كانت النافذة غير موجودة (عند المريض)، نجعله مجرد نص للعرض
+            parent.style.cursor = 'default';
+            parent.onclick = null; // نلغي أي وظيفة ضغط
+        }
+    }
 }
 
 // 5. محرك المنشورات المتطور (Posts Engine)
@@ -255,12 +406,13 @@ window.loadProfilePosts = async function(uid, mode = 'all') {
     }
     // ===================================================
 
-    profilePostsListener = window.db.collection("posts").where("authorId", "==", uid).onSnapshot(snap => {
-        document.getElementById('pro-posts-count').innerText = snap.size; 
+   profilePostsListener = window.db.collection("posts").where("authorId", "==", uid).onSnapshot(snap => {
+        // 🚨 تأمين: تحديث عداد المنشورات فقط إذا كان العنصر موجوداً (مخفي في صفحة المريض)
+        const countEl = document.getElementById('pro-posts-count');
+        if (countEl) countEl.innerText = snap.size; 
         
         if (snap.empty) {
-            postsContainer.innerHTML = `<div style="text-align:center; padding:50px; color:var(--text-sub);">${dict.empty_posts || 'لا توجد منشورات'}</div>`;
-            mediaContainer.innerHTML = `<div style="text-align:center; padding:50px; color:var(--text-sub);">${dict.empty_posts_media || 'لا توجد وسائط'}</div>`;
+            if(postsContainer) postsContainer.innerHTML = `<div style="text-align:center; padding:50px; color:var(--text-sub);">${dict.empty_posts || 'لا توجد منشورات'}</div>`;
             return;
         }
 
@@ -365,25 +517,46 @@ window.switchProTab = function(tid, btn) {
     if (tid === 'tab-posts') window.loadProfilePosts(currentViewedId, 'all');
     if (tid === 'tab-media') window.loadProfilePosts(currentViewedId, 'media');
 };
-
-// 7. نظام المتابعة التبادلي
-window.toggleFollow = async function() {
+// 7. نظام المتابعة التبادلي (تم تحديثه ليدعم المريض والطبيب معاً 🤝)
+window.toggleFollow = async function(overrideTargetId, btnElement) {
     const myUid = window.auth.currentUser.uid;
-    const targetUid = currentViewedId;
-    const btn = document.getElementById('pro-follow-btn');
-    const isFollowing = btn.classList.contains('pro-btn-outline');
+    // نأخذ الـ ID الممرر (إذا كنا في المريض) أو نستخدم الـ ID العام (إذا كنا في الطبيب)
+    const targetUid = overrideTargetId || currentViewedId;
+    // نأخذ الزر الممرر أو نبحث عن الزر القديم
+    const btn = btnElement || document.getElementById('pro-follow-btn');
+    
+    if (!btn) return; // حماية من الانهيار
+
+    // فحص هل هو متابَع بناءً على الكلاسات
+    const isFollowing = btn.classList.contains('pro-btn-outline') || btn.classList.contains('hm-btn-outline');
     const dict = window.translations[localStorage.getItem('app_lang') || 'ar'] || {};
 
     if (isFollowing) {
+        // إلغاء المتابعة
         await window.db.collection("users").doc(targetUid).collection("followers").doc(myUid).delete();
         await window.db.collection("users").doc(myUid).collection("following").doc(targetUid).delete();
-        btn.classList.replace('pro-btn-outline', 'pro-btn-primary');
-        btn.querySelector('span').innerText = dict.follow_btn || 'متابعة';
+        
+        // تحديث شكل الزر حسب نوع البروفايل (طبيب أم مريض)
+        if (btn.id === 'pro-follow-btn') {
+            btn.classList.replace('pro-btn-outline', 'pro-btn-primary');
+            btn.querySelector('span').innerText = dict.follow_btn || 'متابعة';
+        } else {
+            btn.classList.replace('hm-btn-outline', 'hm-btn');
+            btn.innerHTML = `<ion-icon name="person-add"></ion-icon> <span>${dict.follow_btn || 'متابعة'}</span>`;
+        }
     } else {
+        // متابعة
         await window.db.collection("users").doc(targetUid).collection("followers").doc(myUid).set({t:Date.now()});
         await window.db.collection("users").doc(myUid).collection("following").doc(targetUid).set({t:Date.now()});
-        btn.classList.replace('pro-btn-primary', 'pro-btn-outline');
-        btn.querySelector('span').innerText = dict.unfollow_btn || 'إلغاء المتابعة';
+        
+        // تحديث شكل الزر
+        if (btn.id === 'pro-follow-btn') {
+            btn.classList.replace('pro-btn-primary', 'pro-btn-outline');
+            btn.querySelector('span').innerText = dict.unfollow_btn || 'إلغاء المتابعة';
+        } else {
+            btn.classList.replace('hm-btn', 'hm-btn-outline');
+            btn.innerHTML = `<ion-icon name="checkmark-circle"></ion-icon> <span>${dict.unfollow_btn || 'إلغاء المتابعة'}</span>`;
+        }
         
         if (typeof window.sendNotification === 'function') {
             window.sendNotification(targetUid, 'follow');
@@ -644,14 +817,14 @@ window.fetchMyGPSLocation = function() {
 };
 
 // ============================================================================
-// 💾 2. دالة حفظ البروفايل (المدمجة مع حقولك الأصلية)
+// 💾 2. دالة حفظ البروفايل (المدمجة مع حقولك الأصلية + تحديث المنشورات 🚀)
 // ============================================================================
 window.saveProfile = async function() {
     const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
     const user = firebase.auth().currentUser;
     if (!user) return;
 
-    // جلب القيم من الاستمارة الأصلية الخاصة بك
+    // جلب القيم من الاستمارة
     const name = document.getElementById('edit-name').value.trim();
     const specialty = document.getElementById('edit-specialty').value.trim();
     const bio = document.getElementById('edit-bio').value.trim();
@@ -677,22 +850,35 @@ window.saveProfile = async function() {
         locationLink: locationText
     };
 
-    // إذا التقط الطبيب موقعه بنجاح، نضيف الإحداثيات للحقيبة
+    // إذا التقط الطبيب موقعه بنجاح، نضيف الإحداثيات
     if (latStr && lngStr) {
         updateData.latitude = parseFloat(latStr);
         updateData.longitude = parseFloat(lngStr);
     }
 
     try {
-        window.showToast(dict.saving_changes || "جاري حفظ التغييرات... ⏳");
+        window.showToast(dict.saving_changes || "جاري حفظ التغييرات وتحديث منشوراتك... ⏳");
         
-        // التحديث الشامل في قاعدة البيانات
+        // 🚨 1. تحديث الملف الشخصي في قاعدة بيانات المستخدمين
         await firebase.firestore().collection('users').doc(user.uid).update(updateData);
         
-        window.showToast(dict.profile_updated || "تم تحديث ملفك المهني بنجاح! 🎉");
+        // 🚨 2. الجراحة الذكية: تفقد كل المنشورات السابقة وتحديث الاسم فيها (Batch Update)
+        const postsQuery = await firebase.firestore().collection('posts').where('authorId', '==', user.uid).get();
+        
+        if (!postsQuery.empty) {
+            const batch = firebase.firestore().batch(); // نستخدم Batch لتعديل كل شيء في ثانية واحدة
+            postsQuery.forEach(doc => {
+                // نحدث حقل authorName في كل منشور قديم بالاسم الجديد
+                batch.update(doc.ref, { authorName: name }); 
+            });
+            await batch.commit(); // تنفيذ التعديل الجماعي
+        }
+        // =========================================================
+
+        window.showToast(dict.profile_updated || "تم تحديث ملفك المهني ومنشوراتك بنجاح! 🎉");
         document.getElementById('editProfileModal').style.display = 'none';
         
-        // 🚨 السطر السحري: اطلب من دالة العرض أن تجلب البيانات الجديدة وتطبعها فوراً! 🚨
+        // تحديث الواجهة فوراً
         if(typeof fetchProfileData === 'function') {
             fetchProfileData(user.uid);
         }
@@ -746,7 +932,7 @@ window.toggleNightDuty = async function() {
             btn.innerHTML = dict.start_duty || 'تفعيل المناوبة ✅';
             btn.style.background = 'var(--card-bg)';
             btn.style.borderColor = 'var(--border-color)';
-            btn.style.color = 'white';
+            btn.style.color = 'var(--text-main)';
             window.showToast(dict.duty_deactivated || "تم إيقاف المناوبة. لقد اختفيت من خريطة المرضى 🚫");
         }
     } catch(error) {
@@ -779,10 +965,11 @@ window.listenToMedicineRequests = function() {
                 const req = doc.data();
                 const reqId = doc.id;
                 
+               // 🚨 بدلنا white بـ var(--text-main) وبدلنا #aaa بـ var(--text-sub) 🚨
                 listDiv.innerHTML += `
                     <div style="background: rgba(183, 148, 244, 0.1); border: 1px dashed var(--purple); padding: 15px; border-radius: 12px;">
-                        <h4 style="margin: 0 0 5px 0; color: white; font-size: 15px;">💊 ${dict.patient_looking_for || 'المريض يبحث عن:'} <span style="color:var(--purple);">${req.medName}</span></h4>
-                        <p style="margin: 0 0 10px 0; font-size: 11px; color: #aaa;">${dict.is_med_available || 'هل هذا الدواء متوفر في صيدليتك الآن؟'}</p>
+                        <h4 style="margin: 0 0 5px 0; color: var(--text-main); font-size: 15px;">💊 ${dict.patient_looking_for || 'المريض يبحث عن:'} <span style="color:var(--purple);">${req.medName}</span></h4>
+                        <p style="margin: 0 0 10px 0; font-size: 11px; color: var(--text-sub);">${dict.is_med_available || 'هل هذا الدواء متوفر في صيدليتك الآن؟'}</p>
                         
                         <button class="hm-btn" style="background: var(--green); color: black; margin: 0; padding: 10px; font-size: 13px;" onclick="window.iHaveThisMed('${reqId}', '${req.medName?.replace(/'/g, "\\'")}')">
                             <ion-icon name="checkmark-circle"></ion-icon> ${dict.yes_available || 'نعم، متوفر عندي'}
@@ -897,14 +1084,13 @@ document.addEventListener('DOMContentLoaded', () => {
 window.openChatFromProfile = async function() {
     const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
     const myUid = window.auth.currentUser.uid;
-    const targetUid = currentViewedId; // الـ ID الخاص بصاحب البروفايل
+    const targetUid = currentViewedId; 
 
-    if (myUid === targetUid) return; // لا يمكنك مراسلة نفسك!
+    if (myUid === targetUid) return; 
 
     window.showToast(dict.opening_secure_room || "جاري فتح الغرفة الآمنة... ⏳");
 
     try {
-        // 1. جلب بياناتي وبياناته لتحديد نوع الغرفة
         const myDoc = await window.db.collection("users").doc(myUid).get();
         const targetDoc = await window.db.collection("users").doc(targetUid).get();
 
@@ -916,10 +1102,8 @@ window.openChatFromProfile = async function() {
         const targetName = targetData.name || (dict.default_user || "مستخدم");
         const targetImg = targetData.photoURL || 'assets/img/profile.png';
 
-        // 2. صناعة ID الغرفة الموحد (الرقم الأصغر أولاً لكي يكون ثابتاً دائماً)
         const chatId = myUid < targetUid ? `${myUid}_${targetUid}` : `${targetUid}_${myUid}`;
 
-        // 3. تجهيز الغرفة في قاعدة البيانات إذا كانت هذه أول محادثة بينكما!
         const chatRef = window.db.collection("chats").doc(chatId);
         const chatSnap = await chatRef.get();
         
@@ -936,38 +1120,192 @@ window.openChatFromProfile = async function() {
             });
         }
 
-        // 4. إغلاق شاشة البروفايل لكي لا تظل عالقة في الخلفية
-        window.closeSPA('profileSlidePage');
+        // 🚨🚨 الضربة القاضية للطبقات: إغلاق كل شيء بقوة قبل فتح الدردشة 🚨🚨
+        document.querySelectorAll('.slide-page').forEach(slide => {
+            slide.classList.remove('active');
+        });
+        if (typeof window.closeSPA === 'function') {
+            window.closeSPA('profileSlidePage');
+            window.closeSPA('postDetailsSlidePage'); // قتله تحديداً
+        }
 
         // ================= 5. التوجيه الذكي حسب الرتبة =================
-        
         const myRoleIsMedical = (myRole === 'doctor' || myRole === 'pharmacist');
         const targetRoleIsMedical = (targetRole === 'doctor' || targetRole === 'pharmacist');
 
-        if (myRoleIsMedical && targetRoleIsMedical) {
-            // 🤝 طبيب/صيدلي يراسل طبيب/صيدلي --> (غرفة الزملاء)
-            const roleLabel = targetRole === 'pharmacist' ? (dict.pharmacist || 'صيدلي') : (dict.doctor || 'طبيب');
-            if (window.PeerChatSystem) {
-                window.PeerChatSystem.openRoom(targetUid, targetName, targetImg, chatId, roleLabel);
+        // نعطي المتصفح 100 ملي ثانية لكي يخفي الطبقات فعلياً ثم نفتح الدردشة
+        setTimeout(() => {
+            if (myRoleIsMedical && targetRoleIsMedical) {
+                const roleLabel = targetRole === 'pharmacist' ? (dict.pharmacist || 'صيدلي') : (dict.doctor || 'طبيب');
+                if (window.PeerChatSystem) {
+                    window.PeerChatSystem.openRoom(targetUid, targetName, targetImg, chatId, roleLabel);
+                }
+            } 
+            else if (myRole === 'doctor' && targetRole === 'patient') {
+                if (window.DoctorPatientChatSystem) {
+                    window.DoctorPatientChatSystem.openRoom(targetUid, targetName, targetImg, chatId);
+                }
+            } 
+            else {
+                if (typeof window.openPrivateChat === 'function') {
+                    window.openPrivateChat(targetUid, targetName, targetImg);
+                } else {
+                    window.showToast(dict.patient_engine_offline || "عذراً، محرك المريض غير متصل حالياً ⚠️");
+                }
             }
-        } 
-        else if (myRole === 'doctor' && targetRole === 'patient') {
-            // 🩺 طبيب يراسل مريض --> (غرفة استشارات المرضى مع زر الملف السحابي)
-            if (window.DoctorPatientChatSystem) {
-                window.DoctorPatientChatSystem.openRoom(targetUid, targetName, targetImg, chatId);
-            }
-        } 
-        else {
-            // 👤 مريض يراسل طبيب أو مريض يراسل مريض --> (الغرفة العادية للمرضى)
-            if (typeof window.openPrivateChat === 'function') {
-                window.openPrivateChat(targetUid, targetName, targetImg);
-            } else {
-                window.showToast(dict.patient_engine_offline || "عذراً، محرك المريض غير متصل حالياً ⚠️");
-            }
-        }
+        }, 100);
 
     } catch(error) {
         console.error("Error routing to chat:", error);
         window.showToast(dict.error_opening_chat || "حدث خطأ أثناء محاولة فتح المحادثة ❌");
     }
+};
+// ============================================================================
+// 👤 محركات عرض بروفايل المريض والتفاعل
+// ============================================================================
+// ============================================================================
+// 👤 محركات عرض بروفايل المريض والتفاعل (النسخة النهائية + زر المتابعة الذكي 🔥)
+// ============================================================================
+
+// 1. رسم بروفايل المريض لنفسه
+window.renderPatientSelfProfile = function(data, dict) {
+    const container = document.getElementById('profile-container-body');
+    const safeImg = data.photoURL || 'assets/img/profile.png';
+    const safeName = data.name || (dict.default_user_name || "مريض");
+    const safePhone = data.phone || (dict.not_specified || "لم يتم إضافة رقم هاتف");
+
+    container.innerHTML = `
+        <div class="pro-header-clean" style="padding-bottom: 30px; border-bottom: none; text-align:center;">
+            <div class="pro-avatar-wrapper" style="margin: 0 auto 15px;">
+                <img id="pro-pic" src="${safeImg}" class="pro-avatar" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid var(--primary);">
+                <label for="upload-pro-pic" class="pro-edit-avatar" style="position:absolute; bottom:5px; right:5px; background:var(--primary); color:white; border-radius:50%; width:35px; height:35px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                    <ion-icon name="camera"></ion-icon>
+                </label>
+                <input type="file" id="upload-pro-pic" hidden onchange="window.updateProfilePic(event)">
+            </div>
+
+            <h1 class="pro-name" style="font-size:22px; margin-bottom:5px;">${safeName}</h1>
+            <p style="color: var(--text-sub); margin:0; font-family:'Cairo';"><ion-icon name="call-outline"></ion-icon> ${safePhone}</p>
+
+            <div style="margin-top: 25px; width: 100%; display: flex; justify-content: center;">
+                <button onclick="window.openPatientEditModal()" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-app); padding: 12px 35px; border-radius: 25px; font-family:'Cairo'; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:8px; box-shadow:var(--shadow);">
+                    <ion-icon name="create-outline"></ion-icon> ${dict.opt_edit || "تعديل البروفايل"}
+                </button>
+            </div>
+        </div>
+    `;
+};
+
+window.renderDoctorProfileForPatient = async function(data, dict, myUid) {
+    const container = document.getElementById('profile-container-body');
+    const safeImg = data.photoURL || 'assets/img/profile.png';
+    const roleText = data.role.includes('doctor') ? (dict.role_doctor || "طبيب") : (dict.role_pharmacist || "صيدلي");
+    
+    // 🚨 جلب شارة التوثيق من الداتا ✅
+    const verifiedBadge = data.isVerified === true 
+        ? `<ion-icon name="checkmark-circle" style="color:var(--success); font-size:22px; vertical-align:middle; margin-right:5px;"></ion-icon>` 
+        : ``;
+
+    // فحص حالة المتابعة
+    const myDoc = await window.db.collection("users").doc(myUid).get();
+    const myFollowing = myDoc.data().following || [];
+    const isFollowing = myFollowing.includes(data.uid);
+    
+    const followBtnText = isFollowing ? (dict.unfollow_btn || "إلغاء المتابعة") : (dict.follow_btn || "متابعة");
+    const followBtnClass = isFollowing ? "pro-btn-outline" : "pro-btn-primary";
+    const followIcon = isFollowing ? "checkmark-circle" : "person-add";
+
+    container.innerHTML = `
+        <div class="pro-header-clean" style="text-align:center;">
+            <img src="${safeImg}" class="pro-avatar" style="width:100px; height:100px; border-radius:50%; margin-bottom:15px; border:2px solid var(--primary);">
+            
+            <h1 class="pro-name" style="font-size:20px; margin-bottom:5px; display:flex; align-items:center; justify-content:center;">
+                ${dict.dr_prefix || 'د.'} ${data.name} ${verifiedBadge}
+            </h1>
+            
+            <div class="pro-role" style="color:var(--primary); font-weight:bold;">${roleText}</div>
+            <div style="color: var(--text-sub); font-size:13px; margin-top:10px; padding:0 20px;">${data.bio || ''}</div>
+            
+            <div class="pro-action-btns" style="display:flex; gap:10px; margin-top:20px; padding:0 15px;">
+                
+                <div style="flex:1.5; display:flex; border-radius:20px; overflow:hidden; border:1px solid var(--primary); height:46px; box-shadow: var(--shadow);">
+                    <button id="pro-follow-btn" class="${followBtnClass}" onclick="window.toggleFollow('${data.uid}', this)" style="flex:2.5; border:none; height:100%; font-family:'Cairo'; font-weight:bold; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; border-radius:0;">
+                        <ion-icon name="${followIcon}"></ion-icon> <span>${followBtnText}</span>
+                    </button>
+                    <div id="pro-followers-count" style="flex:1; background:var(--card-bg); color:var(--text-main); display:flex; justify-content:center; align-items:center; border-right:1px solid var(--primary); font-weight:900; font-size:15px;">
+                        0
+                    </div>
+                </div>
+                
+                <button onclick="window.msgDoctorFromPatient('${data.uid}', '${data.name}', '${safeImg}')" style="flex:1; border-radius:20px; height:46px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--border-app); font-family:'Cairo'; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:5px; cursor:pointer;">
+                    <ion-icon name="chatbubble-ellipses-outline"></ion-icon> ${dict.msg_btn || 'مراسلة'}
+                </button>
+            </div>
+        </div>
+
+        <div class="pro-content-area" style="margin-top:20px; background: var(--bg-app); min-height: 50vh;">
+            <div id="tab-posts" class="pro-tab-content active">
+                <div id="pro-posts-container" style="padding: 10px 0;">
+                    <div style="text-align:center; padding:30px;"><ion-icon name="sync" style="animation: spin 1s infinite; font-size: 30px;"></ion-icon></div>
+                </div>
+            </div>
+            <div id="pro-media-container" style="display:none;"></div>
+        </div>
+    `;
+
+    // 🚀 تشغيل المحركات بأمان
+    if(typeof window.loadProfilePosts === 'function') window.loadProfilePosts(data.uid, 'all');
+    if(typeof setupRealtimeStats === 'function') setupRealtimeStats(data.uid);
+};
+
+// 3. فتح نافذة التعديل للمريض
+window.openPatientEditModal = async function() {
+    const myUid = window.auth.currentUser.uid;
+    const doc = await window.db.collection("users").doc(myUid).get();
+    const data = doc.data();
+    
+    document.getElementById('edit-patient-name').value = data.name || '';
+    document.getElementById('edit-patient-phone').value = data.phone || '';
+    
+    document.getElementById('patientEditProfileModal').style.display = 'flex';
+};
+
+// 4. حفظ بيانات المريض في الداتا بيز
+window.savePatientProfile = async function() {
+    const newName = document.getElementById('edit-patient-name').value.trim();
+    const newPhone = document.getElementById('edit-patient-phone').value.trim();
+    
+    if(!newName) return window.showToast("الاسم مطلوب!");
+    
+    try {
+        await window.db.collection("users").doc(window.auth.currentUser.uid).update({
+            name: newName,
+            phone: newPhone
+        });
+        
+        document.getElementById('patientEditProfileModal').style.display = 'none';
+        window.showToast("تم تحديث بياناتك بنجاح ✅");
+        window.openProfileSlide(window.auth.currentUser.uid);
+    } catch (e) {
+        window.showToast("حدث خطأ أثناء الحفظ");
+        console.error(e);
+    }
+};
+
+// 5. المراسلة الذكية (من مجتمع المريض إلى صندوق المراسلة)
+window.msgDoctorFromPatient = function(doctorId, doctorName, doctorImg) {
+    // 1. حفظ بيانات الطبيب مع أمر "الفتح التلقائي"
+    localStorage.setItem('pending_patient_chat', JSON.stringify({
+        id: doctorId, 
+        name: doctorName, 
+        img: doctorImg,
+        autoOpen: true // 🚨 أمر إجباري لصفحة الانبوكس لفتح الدردشة
+    }));
+    
+    window.showToast("جاري فتح غرفة الدردشة... 💬");
+    
+    // 2. التوجيه المباشر
+    setTimeout(() => {
+        window.location.href = "patient/patient_inbox.html"; 
+    }, 600);
 };

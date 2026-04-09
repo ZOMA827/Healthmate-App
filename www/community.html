@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="css/community_style.css">
     <link rel="stylesheet" href="css/profile_style.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
+    
     
     <script>
         (function() {
@@ -17,7 +17,7 @@
             document.documentElement.setAttribute('data-theme', savedTheme);
         })();
     </script>
-
+ 
 </head>
 <body>
 
@@ -92,12 +92,21 @@
         <div id="feed-ptr-indicator">
                 <ion-icon name="sync-outline" id="ptr-icon"></ion-icon>
             </div>
-           <div class="stories-wrapper" id="stories-container">
-               <div class="story-item" onclick="window.openStoryStudio()">
-                    <div class="story-add-ring"><ion-icon name="add" data-i18n="story_add_title"></ion-icon></div>
-                    <div class="story-name" data-i18n="story_add">إضافة قصة</div>
-                </div>
-            </div>
+       <div class="stories-wrapper" id="stories-container">
+    <div class="story-item" onclick="window.openStoryStudio()">
+        <div class="story-add-squircle">
+            <ion-icon name="add" data-i18n="story_add_title"></ion-icon>
+        </div>
+        <div class="story-name" data-i18n="story_add">إضافة قصة</div>
+    </div>
+    
+    <div class="story-item">
+        <div class="story-squircle">
+            <img src="assets/img/profile.png" alt="User">
+        </div>
+        <div class="story-name">د. أحمد</div>
+    </div>
+</div>
 
        <div class="create-post">
                 <div class="upper">
@@ -166,7 +175,7 @@
             </div>
              <div id="night-duty-section" style="display: none; background: rgba(0, 210, 255, 0.05); border: 1px solid var(--blue); padding: 15px; border-radius: 15px; margin-bottom: 20px; justify-content: space-between; align-items: center;">
     <div>
-        <h4 style="margin: 0; color: white; font-size: 15px;" data-i18n="night_duty_title">المناوبة الليلية 🌙</h4>
+        <h4 style="margin: 0; color: var(--text-main); font-size: 15px;" data-i18n="night_duty_title">المناوبة الليلية 🌙</h4>
         <p style="margin: 0; font-size: 11px; color: var(--text-sub);" data-i18n="night_duty_sub">أخبر المرضى أنك متواجد الآن</p>
     </div>
     <button id="night-duty-btn" onclick="window.toggleNightDuty()" class="hm-btn" style="width: auto; margin: 0; background: var(--card-bg); border: 1px solid var(--border-color); color: white; padding: 8px 15px;" data-i18n="btn_activate">تفعيل ✅</button>
@@ -476,101 +485,103 @@
             <div style="text-align:center; padding: 40px; color: var(--text-sub);" data-i18n="search_placeholder">اكتب للبحث...</div>
         </div>
     </div>
-
-   <div class="story-viewer-overlay" id="storyViewer">
-        <div class="story-progress-container" id="storyProgressBars"></div>
-        
-        <div class="story-viewer-header">
-            <div class="story-user-info">
-                <img id="storyViewerPic" src="">
-                <strong id="storyViewerName"></strong>
-                <small id="storyViewerTime" style="color: #ccc; margin-right: 10px;"></small>
-            </div>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <ion-icon name="ellipsis-horizontal" id="storyOptionsBtn" style="color: white; font-size: 24px; cursor: pointer; display: none;" onclick="toggleStoryOptions()" data-i18n="btn_options_title"></ion-icon>
-                <ion-icon name="close" style="color: white; font-size: 30px; cursor: pointer;" onclick="closeStoryViewer()" data-i18n="btn_close_title"></ion-icon>
-            </div>
-            
-            <div id="storyOptionsMenu" style="display: none; position: absolute; top: 50px; left: 15px; background: var(--card-bg); border-radius: 8px; padding: 5px; z-index: 100;">
-                <button onclick="deleteCurrentStory()" style="background: none; border: none; color: var(--danger); padding: 10px 15px; width: 100%; display: flex; align-items: center; gap: 8px; cursor: pointer; font-family: 'Cairo'; font-weight: bold;">
-                    <ion-icon name="trash"></ion-icon> <span data-i18n="opt_delete">حذف القصة</span>
-                </button>
+<div id="storyViewer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:999999; flex-direction:column;">
+    <div id="storyProgressBars" style="display:flex; gap:4px; padding:15px 10px 5px; position:absolute; top:0; left:0; width:100%; z-index:20;"></div>
+    
+    <div style="position:absolute; top:25px; left:0; width:100%; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; z-index:20; background:linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);">
+        <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="window.closeStoryViewer(); window.openProfileSlide(window.allGroupedStories[window.currentStoryUserIdx].authorId)">
+            <img id="storyViewerPic" src="" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--primary); object-fit:cover;">
+            <div>
+                <strong style="color:white; font-size:15px; display:flex; align-items:center; gap:5px;">
+                    <span id="storyViewerName" data-i18n="default_user_name">مستخدم</span>
+                    <span id="storyVerifiedBadge" style="display:none; color:#1da1f2; font-size:14px;"><ion-icon name="checkmark-circle"></ion-icon></span>
+                </strong>
+                <small id="storyViewerTime" data-i18n="time_now" style="color:#ddd; font-size:11px; display:block;">الآن</small>
             </div>
         </div>
-
-       <div class="story-content-area">
-            <div class="story-tap-left" onclick="window.prevStory()"></div>
-            <div id="storyContentMedia"></div>
-            <div class="story-tap-right" onclick="window.nextStory()"></div>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <ion-icon name="ellipsis-horizontal" id="storyOptionsBtn" style="color:white; font-size:24px; cursor:pointer; display:none;" onclick="window.toggleStoryOptions()"></ion-icon>
+            <ion-icon name="close" style="color:white; font-size:32px; cursor:pointer; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));" onclick="window.closeStoryViewer()"></ion-icon>
         </div>
+        <div id="storyOptionsMenu" style="display:none; position:absolute; top:60px; left:15px; background:var(--card-bg, #222); border-radius:8px; padding:5px; z-index:100; min-width:150px;"></div>
+    </div>
 
-       <div id="storyReplyBar" style="position: absolute; bottom: 20px; left: 15px; right: 15px; z-index: 20; display: none; gap: 10px; align-items: center;">
-            <input type="text" id="storyReplyInput" data-i18n="story_reply_placeholder" placeholder="رد على القصة..." style="flex: 1; border-radius: 25px; padding: 12px 20px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.5); color: white; outline: none; font-family: 'Cairo';" onfocus="clearTimeout(window.storyTimer)" onblur="window.resumeStoryTimer()">
-            
-            <button onclick="window.sendStoryReply()" style="background: none; border: none; color: white; font-size: 26px; cursor: pointer; display: flex; align-items: center;" data-i18n="btn_send_title">
-                <ion-icon name="send"></ion-icon>
-            </button>
-            
-            <button onclick="window.likeCurrentStory(this)" id="storyLikeBtn" style="background: none; border: none; color: white; font-size: 32px; cursor: pointer; display: flex; align-items: center; transition: transform 0.2s;" data-i18n="btn_like_title">
-                <ion-icon name="heart-outline"></ion-icon>
-            </button>
+    <div style="flex:1; position:relative; display:flex; justify-content:center; align-items:center; overflow:hidden;">
+        <div onclick="window.prevStory()" style="position:absolute; top:15%; left:0; width:30%; height:70%; z-index:15;"></div>
+        <div id="storyContentMedia" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;"></div>
+        <div onclick="window.nextStory()" style="position:absolute; top:15%; right:0; width:70%; height:70%; z-index:15;"></div>
+    </div>
+   
+   <div id="storyReplyBar" style="position:absolute; bottom:0; left:0; width:100%; padding:15px; background:linear-gradient(to top, rgba(0,0,0,0.8), transparent); z-index:20; display:none; gap:10px; align-items:center;">
+        <input type="text" id="storyReplyInput" data-i18n="story_reply_placeholder" placeholder="إرسال رسالة..." style="flex:1; border-radius:30px; padding:12px 20px; background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); color:white; outline:none; font-family:'Cairo'; backdrop-filter:blur(5px);" onfocus="clearTimeout(window.storyTimer)" onblur="window.resumeStoryTimer()">
+        <div style="display:flex; gap:10px; font-size:26px;">
+            <span onclick="window.sendQuickStoryReaction('❤️')" style="cursor:pointer;">❤️</span>
+            <span onclick="window.sendQuickStoryReaction('😂')" style="cursor:pointer;">😂</span>
+        </div>
+        <button onclick="window.replyToStory()" style="background:var(--primary); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:18px;">
+            <ion-icon name="send" style="transform:rotate(180deg); margin-left:-3px;"></ion-icon>
+        </button>
+        <button onclick="window.likeCurrentStory(this)" id="storyLikeBtn" style="background:none; border:none; color:white; font-size:32px; cursor:pointer; display:flex; align-items:center;">
+            <ion-icon name="heart-outline"></ion-icon>
+        </button>
+    </div>
+
+    <div id="storyOwnerBar" style="position:absolute; bottom:20px; left:0; width:100%; display:none; justify-content:center; z-index:20;">
+        <button onclick="window.viewStoryLikes()" style="background: rgba(0,0,0,0.6); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 25px; border-radius: 30px; font-family: 'Cairo'; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.2s;">
+            <ion-icon name="heart" style="color: var(--danger); font-size: 22px;"></ion-icon>
+            <span id="story-likes-count">0</span> <span data-i18n="likes_count_text">إعجابات</span>
+        </button>
+    </div>
+
+</div>
+
+<div id="storyStudioPage" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:999999; flex-direction:column;">
+    <div style="position:absolute; top:20px; left:0; right:0; padding:0 20px; display:flex; justify-content:space-between; align-items:center; z-index:10;">
+        <ion-icon name="close-outline" style="color:white; font-size:35px; cursor:pointer; text-shadow:0 2px 4px rgba(0,0,0,0.5);" onclick="window.closeStoryStudio()"></ion-icon>
+        <div style="display:flex; gap:20px; align-items:center;">
+            <div onclick="window.toggleTextStoryMode()" style="color:white; font-weight:bold; font-family:'Cairo'; cursor:pointer; text-shadow:0 2px 4px rgba(0,0,0,0.5); font-size:20px;">Aa</div>
+            <ion-icon name="color-wand-outline" style="color:white; font-size:30px; cursor:pointer; text-shadow:0 2px 4px rgba(0,0,0,0.5);" onclick="window.cycleStudioFilter()"></ion-icon>
+            <ion-icon name="camera-reverse-outline" id="studio-flip-btn" style="color:white; font-size:30px; cursor:pointer; text-shadow:0 2px 4px rgba(0,0,0,0.5);" onclick="window.flipCamera()"></ion-icon>
         </div>
     </div>
 
-
-
-
-  <div id="storyStudioPage" class="slide-page" style="z-index: 20000; background: #000; flex-direction: column;">
-        
-        <div style="position: absolute; top: 20px; left: 0; right: 0; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; z-index: 10;">
-            <ion-icon name="close-outline" style="color: white; font-size: 35px; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" onclick="window.closeStoryStudio()" data-i18n="btn_close_title"></ion-icon>
-            
-            <div style="display: flex; gap: 20px; align-items: center;">
-                <div onclick="window.toggleTextStoryMode()" style="color: white; font-weight: bold; font-family: 'Cairo'; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 20px;">Aa</div>
-                <ion-icon name="color-wand-outline" style="color: white; font-size: 30px; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" onclick="window.cycleStudioFilter()" data-i18n="studio_filter_title"></ion-icon>
-                <ion-icon name="camera-reverse-outline" id="studio-flip-btn" style="color: white; font-size: 30px; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" onclick="window.flipCamera()" data-i18n="studio_flip_title"></ion-icon>
-            </div>
-        </div>
-
-        <video id="studio-camera-preview" autoplay playsinline style="width: 100%; height: 100vh; object-fit: cover; background: #111; transition: filter 0.3s;"></video>
-        
-        <div id="studio-text-bg" style="display: none; width: 100%; height: 100vh; background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); position: absolute; top: 0; left: 0; z-index: 4; justify-content: center; align-items: center; padding: 20px;">
-            <textarea id="studio-text-only-input" data-i18n="story_text_placeholder" placeholder="اكتب قصتك هنا..." style="width: 100%; height: 50vh; background: transparent; border: none; color: white; font-size: 30px; font-family: 'Cairo'; text-align: center; outline: none; font-weight: bold; resize: none; text-shadow: 0 2px 5px rgba(0,0,0,0.3);"></textarea>
-            <div style="position: absolute; bottom: 120px; display: flex; gap: 15px;">
-                <div onclick="window.changeTextBg('#ff9a9e, #fecfef')" style="width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(45deg, #ff9a9e, #fecfef); cursor: pointer; border: 2px solid white;"></div>
-                <div onclick="window.changeTextBg('#4facfe, #00f2fe')" style="width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(45deg, #4facfe, #00f2fe); cursor: pointer; border: 2px solid white;"></div>
-                <div onclick="window.changeTextBg('#43e97b, #38f9d7')" style="width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(45deg, #43e97b, #38f9d7); cursor: pointer; border: 2px solid white;"></div>
-                <div onclick="window.changeTextBg('#fa709a, #fee140')" style="width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(45deg, #fa709a, #fee140); cursor: pointer; border: 2px solid white;"></div>
-                <div onclick="window.changeTextBg('#30cfd0, #330867')" style="width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(45deg, #30cfd0, #330867); cursor: pointer; border: 2px solid white;"></div>
-            </div>
-        </div>
-
-        <img id="studio-photo-preview" style="display: none; width: 100%; height: 100vh; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 5;">
-
-        <div id="studio-controls" style="position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; z-index: 10; padding: 0 20px;">
-            <label for="studio-gallery-upload" style="cursor: pointer; display: flex; flex-direction: column; align-items: center; color: white;" data-i18n="studio_gallery_title">
-                <div style="width: 40px; height: 40px; border-radius: 10px; border: 2px solid white; display: flex; justify-content: center; align-items: center; background: rgba(255,255,255,0.2);">
-                    <ion-icon name="images" style="font-size: 24px;"></ion-icon>
-                </div>
-            </label>
-            <input type="file" id="studio-gallery-upload" accept="image/*,video/*" hidden onchange="window.handleStudioGallery(event)">
-
-            <div onclick="window.captureStudioPhoto()" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; display: flex; justify-content: center; align-items: center; cursor: pointer;" data-i18n="studio_capture_title">
-                <div style="width: 65px; height: 65px; background: white; border-radius: 50%; transition: 0.2s;" onmousedown="this.style.transform='scale(0.8)'" onmouseup="this.style.transform='scale(1)'"></div>
-            </div>
-            <div style="width: 40px;"></div>
-        </div>
-
-      <div id="studio-publish-bar" style="display: none; position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.8); padding: 15px 20px; z-index: 10; flex-direction: column; gap: 10px;">
-            <input type="text" id="studio-caption" data-i18n="story_caption_placeholder" placeholder="اكتب وصفاً للقصة..." style="width: 100%; background: transparent; border: none; color: white; outline: none; font-size: 16px; font-family: 'Cairo'; text-align: center;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                <button onclick="window.retakeStudio()" style="background: none; border: none; color: white; font-size: 16px; font-family: 'Cairo'; cursor: pointer;" data-i18n="btn_cancel">إلغاء</button>
-                <button id="btn-publish-story-final" onclick="window.publishStudioStory()" style="background: var(--primary); color: white; border: none; padding: 10px 25px; border-radius: 20px; font-size: 16px; font-weight: bold; font-family: 'Cairo'; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-                    <span data-i18n="btn_publish_story">نشر قصتي</span> <ion-icon name="chevron-forward-outline"></ion-icon>
-                </button>
-            </div>
+    <video id="studio-camera-preview" autoplay playsinline style="width:100%; height:100%; object-fit:cover; background:#111; transition:filter 0.3s;"></video>
+    
+    <div id="studio-text-bg" style="display:none; width:100%; height:100%; background:linear-gradient(45deg, #ff9a9e, #fecfef); position:absolute; top:0; left:0; z-index:4; justify-content:center; align-items:center; padding:20px;">
+        <textarea id="studio-text-only-input" data-i18n="story_text_placeholder" placeholder="اكتب قصتك هنا..." style="width:100%; height:50vh; background:transparent; border:none; color:white; font-size:30px; font-family:'Cairo'; text-align:center; outline:none; font-weight:bold; resize:none; text-shadow:0 2px 5px rgba(0,0,0,0.3);"></textarea>
+        <div style="position:absolute; bottom:120px; display:flex; gap:15px;">
+            <div onclick="window.changeTextBg('#ff9a9e, #fecfef')" style="width:30px; height:30px; border-radius:50%; background:linear-gradient(45deg, #ff9a9e, #fecfef); cursor:pointer; border:2px solid white;"></div>
+            <div onclick="window.changeTextBg('#4facfe, #00f2fe')" style="width:30px; height:30px; border-radius:50%; background:linear-gradient(45deg, #4facfe, #00f2fe); cursor:pointer; border:2px solid white;"></div>
+            <div onclick="window.changeTextBg('#1a1a1a, #333333')" style="width:30px; height:30px; border-radius:50%; background:#1a1a1a; cursor:pointer; border:2px solid white;"></div>
         </div>
     </div>
+
+    <img id="studio-photo-preview" style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:5;">
+
+    <div id="studio-controls" style="position:absolute; bottom:30px; left:0; right:0; display:flex; justify-content:space-around; align-items:center; z-index:10; padding:0 20px;">
+        <label for="studio-gallery-upload" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; color:white;">
+            <div style="width:40px; height:40px; border-radius:10px; border:2px solid white; display:flex; justify-content:center; align-items:center; background:rgba(255,255,255,0.2);">
+                <ion-icon name="images" style="font-size:24px;"></ion-icon>
+            </div>
+        </label>
+        <input type="file" id="studio-gallery-upload" accept="image/*,video/*" hidden onchange="window.handleStudioGallery(event)">
+
+        <div onclick="window.captureStudioPhoto()" style="width:80px; height:80px; border-radius:50%; border:4px solid white; display:flex; justify-content:center; align-items:center; cursor:pointer;">
+            <div style="width:65px; height:65px; background:white; border-radius:50%; transition:0.2s;" onmousedown="this.style.transform='scale(0.8)'" onmouseup="this.style.transform='scale(1)'"></div>
+        </div>
+        <div style="width:40px;"></div>
+    </div>
+
+    <div id="studio-publish-bar" style="display:none; position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.8); padding:15px 20px; z-index:10; flex-direction:column; gap:10px;">
+        <input type="text" id="studio-caption" data-i18n="story_caption_placeholder" placeholder="اكتب وصفاً للقصة..." style="width:100%; background:transparent; border:none; color:white; outline:none; font-size:16px; font-family:'Cairo'; text-align:center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+            <button onclick="window.retakeStudio()" style="background:none; border:none; color:white; font-size:16px; font-family:'Cairo'; cursor:pointer;" data-i18n="btn_cancel">إلغاء</button>
+            <button id="btn-publish-story-final" onclick="window.publishStudioStory()" style="background:var(--primary); color:white; border:none; padding:10px 25px; border-radius:20px; font-size:16px; font-weight:bold; font-family:'Cairo'; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                <span data-i18n="btn_publish_story">نشر قصتي</span> <ion-icon name="chevron-forward-outline"></ion-icon>
+            </button>
+        </div>
+    </div>
+</div>
 
     <div id="support-modal" class="modal">
         <div class="developer-card-ultra">
@@ -830,14 +841,95 @@
 </div>
     
     
-    <ion-icon name="close-circle" style="position: absolute; top: 30px; right: 30px; font-size: 45px; color: rgba(255,255,255,0.7); cursor: pointer; z-index: 10; transition: 0.3s;" onclick="window.closeMediaViewer()" onmouseover="this.style.color='#ff4b2b'" onmouseout="this.style.color='rgba(255,255,255,0.7)'" data-i18n="btn_close_title"></ion-icon>
-    
-    <img id="viewer-img" src="" style="display: none; max-width: 95%; max-height: 85%; border-radius: 15px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); object-fit: contain; animation: scaleUp 0.3s ease-out;">
-    
-    <video id="viewer-video" controls style="display: none; max-width: 95%; max-height: 85%; border-radius: 15px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); object-fit: contain; outline: none; animation: scaleUp 0.3s ease-out;"></video>
-</div>
+ 
     <div id="toast-msg"></div>
+<div id="verificationSlidePage" class="slide-page" style="background: #050505; z-index: 10005;">
+    <div class="slide-header" style="background: #0a0a0a; border-bottom: 2px solid var(--primary);">
+        <button class="back-btn-circle" onclick="closeSPA('verificationSlidePage')"><ion-icon name="arrow-forward-outline"></ion-icon></button>
+        <div style="font-weight: 900; color: white;">بوابة التوثيق الرسمية</div>
+        <div style="width: 40px;"></div>
+    </div>
 
+    <div style="padding: 25px; text-align: center;">
+        <div style="background: rgba(24, 119, 242, 0.1); padding: 20px; border-radius: 20px; border: 1px dashed var(--primary); margin-bottom: 25px;">
+            <ion-icon name="shield-half-outline" style="font-size: 60px; color: var(--primary);"></ion-icon>
+            <h2 style="color: white; margin: 10px 0;">أمان المرضى أولويتنا</h2>
+            <p style="color: #888; font-size: 13px;">للحصول على رتبة "طبيب موثق" والعلامة الزرقاء، يرجى تزويدنا بالوثائق الرسمية التي تثبت هويتك المهنية.</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <label class="v-upload-box">
+                <input type="file" hidden onchange="window.verificationEngine.handleFileUpload(event, 'certificate')" accept="image/*,application/pdf">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <ion-icon name="ribbon-outline" style="font-size: 30px;"></ion-icon>
+                    <div style="text-align: right;">
+                        <strong style="display: block;">شهادة ممارسة المهنة</strong>
+                        <small id="status-certificate" style="color: #666;">لم يتم الاختيار</small>
+                    </div>
+                </div>
+            </label>
+
+            <label class="v-upload-box">
+                <input type="file" hidden onchange="window.verificationEngine.handleFileUpload(event, 'idCard')" accept="image/*">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <ion-icon name="id-card-outline" style="font-size: 30px;"></ion-icon>
+                    <div style="text-align: right;">
+                        <strong style="display: block;">بطاقة التعريف الوطنية</strong>
+                        <small id="status-idCard" style="color: #666;">صورة الوجهين</small>
+                    </div>
+                </div>
+            </label>
+        </div>
+
+        <textarea id="v-extra-info" placeholder="ملاحظات إضافية (رقم القيد، الجامعة...)" style="width: 100%; height: 100px; background: #111; border: 1px solid #333; border-radius: 15px; margin-top: 20px; padding: 15px; color: white; outline: none; font-family: 'Cairo';"></textarea>
+
+        <button id="v-submit-btn" onclick="window.verificationEngine.submitRequest()" style="width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 15px; margin-top: 30px; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 10px 20px rgba(24, 119, 242, 0.3);">
+            إرسال طلب التوثيق
+        </button>
+    </div>
+</div>
+
+<style>
+    .v-upload-box { background: #111; border: 1px solid #222; padding: 20px; border-radius: 18px; color: white; cursor: pointer; transition: 0.3s; }
+    .v-upload-box:active { transform: scale(0.98); background: #151515; }
+</style>
+
+
+<div id="mediaViewer" class="media-viewer-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:99999; flex-direction:column; touch-action:none; overscroll-behavior:none;">
+    
+    <div id="viewerHeader" class="viewer-ui viewer-header" style="position:absolute; top:0; left:0; width:100%; height:100px; display:flex; justify-content:space-between; align-items:flex-start; padding: 45px 20px 0 20px; z-index:10; background:linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); transition:0.3s ease;">
+        <button id="closeViewerBtn" class="viewer-btn-circle" onclick="window.closeMediaViewer()"><ion-icon name="close-outline"></ion-icon></button>
+        <div style="width:40px;"></div> <button id="viewerOptionsBtn" class="viewer-btn-circle"><ion-icon name="ellipsis-horizontal"></ion-icon></button>
+    </div>
+
+    <div id="viewerMainArea" class="viewer-img-container" style="flex:1; display:flex; justify-content:center; align-items:center; overflow:hidden; position:relative;">
+        <img id="viewerImage" src="" alt="Viewed Image" style="max-width:100%; max-height:100%; object-fit:contain; pointer-events:none; transition:transform 0s ease; transform-origin:center; transform:scale(1) translate(0px, 0px);">
+        <div id="viewerGestureDetector" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:5; background:transparent;"></div>
+    </div>
+
+    <div id="viewerFooter" class="viewer-ui viewer-footer" style="position:absolute; bottom:0; left:0; width:100%; background:linear-gradient(to top, rgba(0,0,0,0.8) 50%, transparent); color:white; padding:20px; transition:0.3s ease; z-index:10; display:flex; flex-direction:column; gap:15px; ">
+        
+        <div style="font-size:14px; font-weight:900;" onclick="window.closeMediaViewer(); window.showLikes(window.viewerCurrentPostId);">
+            <span style="font-size:16px;">👍</span> <span id="viewerLikesCount">---</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-around; align-items:center; padding:10px 0; border-top: 1px solid rgba(255,255,255,0.1); margin-top:5px;">
+            <button class="action-btn" id="viewerLikeBtn" style="background:none; border:none; color:white; font-size:16px; display:flex; align-items:center; gap:8px;">
+                <ion-icon name="heart-outline"></ion-icon> أعجبني
+            </button>
+            <button class="action-btn" onclick="window.closeMediaViewer(); window.openPostDetailsSlide(window.viewerCurrentPostId);" style="background:none; border:none; color:white; font-size:16px; display:flex; align-items:center; gap:8px;">
+                <ion-icon name="chatbubble-outline"></ion-icon> تعليق
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .viewer-btn-circle { background: rgba(0,0,0,0.4); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 24px; transition:0.2s; }
+    .viewer-btn-circle:active { transform: scale(0.9); background: rgba(0,0,0,0.7); }
+    /* ستايل إخفاء الـ UI عند الزوم بالأصابع */
+    .media-viewer-container.zooming .viewer-ui { opacity: 0; pointer-events: none; }
+</style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -845,52 +937,76 @@
     
     <script src="js/languages.js"></script>
     <script src="js/firebase-config.js"></script>
-    
+    <script src="js/media-viewer.js"></script>
     <script src="js/app.js"></script>
     <script src="js/post-details.js"></script>
     <script src="js/profile.js"></script><script src="js/chat-engine.js"></script>
     <script src="js/settings.js"></script>
-    <script src="js/feed-algorithm.js"></script>
+    <script src="js/feed-algorithm.js"></script><script src="js/verification.js"></script>
     <script src="js/story-studio.js"></script> <script src="js/doctor-apps-engine.js"></script>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
-    <script>
+
+  <script>
   // كود زر الرجوع الاحترافي المتوافق مع الموبايل
 document.addEventListener('deviceready', () => {
     const App = window.Capacitor.Plugins.App;
 
     App.addListener('backButton', () => {
-        // 0. 🚨 الجراحة الجديدة: التحقق من Fancybox (عارض الصور الجديد)
-        if (typeof window.Fancybox !== "undefined" && window.Fancybox.getInstance()) {
-            window.Fancybox.close(); // إغلاق الصورة فقط
-            return; // توقف هنا ولا تخرج من التطبيق!
+        // 0. التحقق من عارض الصور الفخم (نظام المنشورات)
+        const mediaViewer = document.getElementById('mediaViewer');
+        if (mediaViewer && mediaViewer.style.display !== 'none') {
+            window.closeMediaViewer(); 
+            return; 
         }
 
-        // 1. إذا كان عارض القصص مفتوحاً
-        const storyViewer = document.getElementById('storyViewerContainer'); 
+        // 1. 🚨 التصحيح هنا: استخدام الاسم الصحيح للـ ID الخاص بالستوري
+        const storyViewer = document.getElementById('storyViewer'); 
         if (storyViewer && storyViewer.style.display !== 'none') {
             window.closeStoryViewer(); 
             return; 
         }
 
-        // 2. إذا كانت هناك صفحة SPA مفتوحة
-        const activeSlide = document.querySelector('.slide-page.active');
-        if (activeSlide) {
-            window.closeSPA(activeSlide.id);
+        // 2. إذا كان استوديو إنشاء القصص مفتوحاً
+        const storyStudio = document.getElementById('storyStudioPage');
+        if (storyStudio && storyStudio.style.display !== 'none') {
+            window.closeStoryStudio();
             return;
         }
 
-        // 3. إذا كان مودال مفتوح (نوافذ التعديل وغيرها)
+        // 3. نظام إغلاق النوافذ المتطور (SPA Slides)
+        const activeSlides = Array.from(document.querySelectorAll('.slide-page.active'));
+        if (activeSlides.length > 0) {
+            activeSlides.sort((a, b) => {
+                const zA = parseInt(window.getComputedStyle(a).zIndex) || 0;
+                const zB = parseInt(window.getComputedStyle(b).zIndex) || 0;
+                return zA - zB;
+            });
+            
+            const topSlide = activeSlides[activeSlides.length - 1]; 
+            if(typeof window.closeSPA === 'function') {
+                window.closeSPA(topSlide.id);
+            } else {
+                topSlide.classList.remove('active');
+            }
+            return; 
+        }
+
+        // 4. إذا كان مودال مفتوح (مثل قائمة المعجبين بالستوري)
         const activeModal = document.querySelector('.modal.active') || document.querySelector('.modal[style*="display: flex"]');
         if (activeModal) {
             activeModal.style.display = 'none';
             activeModal.classList.remove('active');
+            // إذا أغلقنا قائمة المعجبين، نرجع القصة تمشي
+            if(activeModal.id === 'usersListModal' && typeof window.resumeStoryTimer === 'function') {
+                window.resumeStoryTimer();
+            }
             return;
         }
 
-        // 4. إذا لم يوجد شيء مفتوح، اخرج من التطبيق بسلام
+        // 5. إذا كان كل شيء مغلقاً، اخرج من التطبيق بسلام
         App.exitApp();
     });
-});</script>
+});
+</script>
 </body>
 </html>

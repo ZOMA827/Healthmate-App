@@ -15,19 +15,21 @@ body {
 }
 :root {
     --primary: #1877f2; 
-    --primary-rgb: 24, 119, 242; /* ✅ تم إصلاح الخطأ: إضافة الـ RGB لتعمل الشفافية */
+    --primary-rgb: 24, 119, 242; 
     --primary-light: #e7f3ff; 
     --success: #10b981; 
     --danger: #e41e3f; 
     --info-icon: #8cc440;
-    --bg-app: #f0f2f5; 
-    --card-bg: #ffffff; 
+    
+    /* 🚨 التعديلات لزيادة التباين 🚨 */
+    --bg-app: #e6e9ef; /* رمادي بارد بدل الأبيض المائل للرمادي */
+    --card-bg: #ffffff; /* أبيض ناصع للبطاقات */
     --text-main: #050505; 
-    --text-sub: #65676b;
-    --border-app: #ced0d4; 
+    --text-sub: #555555; /* تغميق الخط الفرعي قليلاً */
+    --border-app: #cccccc; /* حدود أوضح */
     --input-bg: #f0f2f5; 
-    --shadow: 0 2px 8px rgba(0,0,0,0.08);
-    --nav-blur: rgba(255, 255, 255, 0.9); 
+    --shadow: 0 4px 12px rgba(0,0,0,0.06); /* ظل أقوى قليلاً لفصل البطاقات */
+    --nav-blur: rgba(230, 233, 239, 0.9); /* تناسق الهيدر مع الخلفية الجديدة */
     --reply-line: #cbd5e1;
 }
 
@@ -160,15 +162,80 @@ textarea.modal-input { width: 100%; height: 120px; background: var(--input-bg); 
     box-shadow: none !important; /* الضربة القاضية لظل الشبح */
 
 }
-/* --- إضافة: نظام القصص --- */
-.stories-wrapper { background: var(--card-bg); border-radius: 16px; padding: 15px; border: 1px solid var(--border-app); display: flex; gap: 15px; overflow-x: auto; scrollbar-width: none; margin-bottom: 15px; }
+/* ==========================================
+   🚀 تصميم القصص الانسيابي (Apple Squircle Style) 
+   ========================================== */
+.stories-wrapper { 
+    background: transparent; /* إزالة الخلفية البيضاء لتبدو القصص عائمة وفخمة */
+    border: none; 
+    padding: 10px 0; 
+    display: flex; 
+    gap: 15px; 
+    overflow-x: auto; 
+    scrollbar-width: none; 
+    margin-bottom: 10px; 
+}
 .stories-wrapper::-webkit-scrollbar { display: none; }
-.story-item { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; flex-shrink: 0; width: 70px;}
-.story-ring { width: 65px; height: 65px; border-radius: 50%; padding: 3px; background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4); }
-.story-ring img { width: 100%; height: 100%; border-radius: 50%; border: 2px solid var(--card-bg); object-fit: cover; }
-.story-add-ring { width: 65px; height: 65px; border-radius: 50%; border: 2px dashed var(--border-app); display: flex; justify-content: center; align-items: center; font-size: 30px; color: var(--text-sub); background: var(--input-bg);}
-.story-name { font-size: 11px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; font-weight: 600;}
 
+.story-item { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 8px; 
+    cursor: pointer; 
+    flex-shrink: 0; 
+    width: 75px;
+    transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.story-item:hover { 
+    transform: translateY(-5px) scale(1.05); /* قفزة خفيفة عند اللمس */
+}
+
+/* الإطار الملون للقصص (ليس دائرة وليس مربع) */
+.story-squircle { 
+    width: 70px; 
+    height: 70px; 
+    border-radius: 22px; /* السحر هنا: حواف انسيابية */
+    padding: 3px; 
+    /* تدرج لوني طبي (أزرق إلى أخضر زمردي) بدل ألوان انستغرام */
+    background: linear-gradient(135deg, var(--primary) 0%, var(--success) 100%); 
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+}
+
+.story-squircle img { 
+    width: 100%; 
+    height: 100%; 
+    border-radius: 18px; /* حواف متناسقة مع الإطار الخارجي */
+    border: 2px solid var(--card-bg); 
+    object-fit: cover; 
+}
+
+/* زر إضافة قصة */
+.story-add-squircle { 
+    width: 70px; 
+    height: 70px; 
+    border-radius: 22px; 
+    border: 2px dashed var(--primary); 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    font-size: 32px; 
+    color: var(--primary); 
+    background: rgba(24, 119, 242, 0.05);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.story-name { 
+    font-size: 12px; 
+    color: var(--text-main); 
+    font-family: 'Cairo';
+    font-weight: 700; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    width: 100%; 
+    text-align: center; 
+}
 /* --- إضافة: اختصارات النشر --- */
 .create-post .shortcuts { display: flex; justify-content: space-around; border-top: 1px solid var(--border-app); padding-top: 12px; margin-top: 15px;}
 .shortcut-btn { display: flex; align-items: center; gap: 8px; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 700; color: var(--text-sub); transition: 0.2s;}
@@ -679,4 +746,9 @@ textarea.modal-input { width: 100%; height: 120px; background: var(--input-bg); 
 .close-story-btn,
 ion-icon.close-circle {
     top: calc(env(safe-area-inset-top, 35px) + 10px) !important;
+}
+
+/* 🚨 تصغير الفراغات الملكية لكروت المنشورات (Compact Mode) 🚨 */
+.feed-area div[id*="dynamic-post"] .fa-card {
+    padding: 15px 15px 10px 15px !important; /* تصغير البادينغ الداخلي */
 }

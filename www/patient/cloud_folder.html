@@ -125,6 +125,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+ <script src="../js/feed-algorithm.js"></script>
     <script src="../js/languages.js"></script>
 
     <script>
@@ -250,32 +251,37 @@ window.goToPage = function(pageUrl) {
                     });
             },
 
-            uploadFile: async function(event, fileType) {
+        uploadFile: async function(event, fileType) {
                 const file = event.target.files[0];
                 if (!file) return;
 
                 const user = firebase.auth().currentUser;
                 if (!user) return window.royalAlert("تنبيه", "يجب تسجيل الدخول لرفع الملفات", "lock-closed", "var(--orange)");
 
-                window.showToast(`جاري تشفير ورفع الـ (${fileType})... ⏳`);
+                window.showToast(`جاري رفع (${fileType}) إلى السحابة... ⏳`);
                 
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = async (e) => {
-                    const base64Img = e.target.result;
-                    try {
-                        await firebase.firestore().collection('cloud_medical_files').add({
-                            patientId: user.uid,
-                            type: fileType,
-                            fileUrl: base64Img,
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        window.showToast("تم الرفع بنجاح! السحابة آمنة ☁️✅");
-                    } catch (error) {
-                        window.royalAlert("خطأ", "فشل الرفع، ربما الصورة كبيرة جداً ❌", "close-circle", "var(--red)");
+                try {
+                    // 🚨 1. الرفع باستخدام Cloudinary (المحرك تاعك الأصلي والباطل) 🚨
+                    const fileUrl = await window.cloudinaryEngine.uploadFile(file);
+
+                    if (!fileUrl) {
+                        throw new Error("فشل الرفع في Cloudinary");
                     }
-                    event.target.value = ''; 
-                };
+
+                    // 🚨 2. حفظ الرابط الخفيف في قاعدة بيانات فايربيس (Firestore) 🚨
+                    await firebase.firestore().collection('cloud_medical_files').add({
+                        patientId: user.uid,
+                        type: fileType,
+                        fileUrl: fileUrl, 
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    window.showToast("تم الرفع بنجاح! السحابة آمنة ☁️✅");
+                } catch (error) {
+                    console.error("Upload Error:", error);
+                    window.royalAlert("خطأ", "فشل الرفع، تأكد من اتصالك بالإنترنت ❌", "close-circle", "var(--red)");
+                }
+                event.target.value = ''; // تصفير الحقل
             },
 
             deleteFile: async function(fileId) {

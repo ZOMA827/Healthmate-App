@@ -258,28 +258,6 @@ function closeSPA(slideId) {
         // ==========================================
 // 🎬 محرك عارض الوسائط السينمائي
 // ==========================================
-window.openMediaViewer = function(mediaUrl, isVideo = false) {
-    const modal = document.getElementById('media-viewer-modal');
-    const img = document.getElementById('viewer-img');
-    const vid = document.getElementById('viewer-video');
-    
-    if(!modal) return;
-    
-    // الذكاء الاصطناعي البسيط: إذا كان الرابط ينتهي بصيغة فيديو أو طلبنا تشغيل فيديو
-    if(isVideo || mediaUrl.match(/\.(mp4|webm|ogg|mov)$/i) || mediaUrl.includes('video/upload')) {
-        img.style.display = 'none';
-        vid.src = mediaUrl;
-        vid.style.display = 'block';
-        vid.play(); // تشغيل الفيديو تلقائياً
-    } else {
-        vid.style.display = 'none';
-        vid.pause();
-        img.src = mediaUrl;
-        img.style.display = 'block';
-    }
-    
-    modal.style.display = 'flex';
-};
 
 window.closeMediaViewer = function() {
     const modal = document.getElementById('media-viewer-modal');
