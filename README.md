@@ -54,3 +54,17 @@ The project was compiled natively to ensure high performance on mobile devices.
 ```bash
 # To run on Android
 npx cap open android
+
+## 📥 Download & Try
+You can download the latest version of the app (APK) from the [Releases Page](https://github.com/ZOMA827/Healthmate-App/releases/latest).
+
+---
+
+## 📱 Get the App
+Experience the Healthmate ecosystem directly on your Android device.
+
+<a href="sha256:ddd29a34be52cbd2b49293eca95e64ef77e2d36661a1e26dc055c704efc18128">
+  <img src="https://img.shields.io/badge/Download-APK-green?style=for-the-badge&logo=android" alt="Download APK">
+</a>
+
+---
