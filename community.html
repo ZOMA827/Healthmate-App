@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Healthmate | SPA</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link rel="stylesheet" href="css/community_style.css">
+    <link rel="stylesheet" href="css/profile_style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+
+        window.royalAlert = function(title, message, type = 'success') {
+    // 1. إنشاء العناصر برمجياً
+    const overlay = document.createElement('div');
+    overlay.className = 'royal-alert-overlay';
+    
+    // تحديد الأيقونة واللون حسب النوع
+    let icon = 'checkmark-circle';
+    let iconColor = '#42e695'; // أخضر للنجاح
+    if(type === 'error') { icon = 'alert-circle'; iconColor = '#ff4b2b'; }
+    if(type === 'info') { icon = 'information-circle'; iconColor = '#00d2ff'; }
+
+    overlay.innerHTML = `
+        <div class="royal-alert-box">
+            <div class="royal-alert-icon" style="color: ${iconColor}">
+                <ion-icon name="${icon}"></ion-icon>
+            </div>
+            <div class="royal-alert-title">${title}</div>
+            <div class="royal-alert-msg">${message}</div>
+            <button class="royal-alert-btn">فهمت ✅</button>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // 2. تشغيل الأنيميشن
+    setTimeout(() => overlay.classList.add('active'), 10);
+
+    // 3. برمجة زر الإغلاق
+    const closeBtn = overlay.querySelector('.royal-alert-btn');
+    closeBtn.onclick = () => {
+        overlay.classList.remove('active');
+        setTimeout(() => overlay.remove(), 300);
+    };
+};
+    </script>
+ 
+</head>
+<body>
+
+   <nav class="main-nav">
+    <div class="nav-content">
+        <div class="logo" data-i18n="logo_text">Healthmate</div>
+        
+        <div class="nav-icons">
+            
+            <div class="nav-item" onclick="openSearchOverlay()">
+                <ion-icon name="search-outline" data-i18n="nav_search_title"></ion-icon>
+            </div>
+
+            <div id="pharma-radar-icon" class="nav-item" style="display: none;" onclick="openPharmaRadar()">
+                <ion-icon name="radio-outline" style="color: var(--purple-glow);"></ion-icon>
+                <span id="radar-notif-dot" class="hm-badge dot-badge"></span>
+            </div>
+            
+            <div id="nav-appointments-btn" class="nav-item" onclick="openSPA('doctor-appointments-slide')">
+                <ion-icon name="calendar-outline"></ion-icon>
+                <span id="doc-app-badge" class="hm-badge">0</span>
+            </div>
+            
+            <div class="nav-item" onclick="window.openNotificationsSlide()">
+                <ion-icon name="notifications-outline"></ion-icon>
+                <span id="noti-badge" class="hm-badge">0</span>
+            </div>
+            
+            <div class="nav-item" onclick="window.openChatSystem()" data-i18n="nav_chat_title">
+                <ion-icon name="chatbubbles-outline"></ion-icon>
+                <span id="global-chat-badge" class="hm-badge dot-badge"></span>
+            </div>
+
+            <div class="user-menu-wrapper">
+                <div class="user-pill" onclick="toggleDropdown()" data-i18n="nav_menu_title">
+                    <img id="nav-user-img" src="assets/img/profile.png">
+                </div>
+                
+                <div class="dropdown-menu" id="profileDropdown">
+                    <div class="dropdown-item" onclick="openProfileSlide(); toggleDropdown();">
+                        <ion-icon name="person-circle-outline"></ion-icon> 
+                        <span data-i18n="nav_profile">عرض ملفي الشخصي</span>
+                    </div>
+                    <div class="dropdown-item" onclick="openSPA('settingsSlidePage'); toggleDropdown();">
+                        <ion-icon name="settings-outline"></ion-icon> 
+                        <span data-i18n="nav_settings">الإعدادات</span>
+                    </div>
+                    <div class="dropdown-item" onclick="toggleDarkMode(); toggleDropdown();">
+                        <ion-icon name="moon-outline"></ion-icon> 
+                        <span data-i18n="nav_dark_mode">الوضع المظلم</span>
+                    </div>
+                    <div class="dropdown-item" style="color: var(--danger);" onclick="window.logoutUser()">
+                        <ion-icon name="log-out-outline" style="color: var(--danger);"></ion-icon> 
+                        <span data-i18n="nav_logout">تسجيل الخروج</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</nav>
+
+    <div class="main-wrapper">
+        <aside class="right-aside">
+           <div class="profile-card" onclick="openProfileSlide()">
+                <div class="cover"></div>
+                <img id="side-user-img" src="assets/img/profile.png">
+                <h3 id="user-name" >جاري التحميل...</h3>
+                <p id="user-role">...</p>
+                <hr style="border: 0; border-top: 1px solid var(--border-app); margin: 15px 0;">
+                <div style="color: var(--primary); font-weight: bold; font-size: 14px;" data-i18n="nav_profile">الذهاب لملفي</div>
+            </div>
+        </aside>
+
+       <main class="feed-section" id="main-feed-area">
+        <div id="feed-ptr-indicator">
+                <ion-icon name="sync-outline" id="ptr-icon"></ion-icon>
+            </div>
+       <div class="stories-wrapper" id="stories-container">
+    <div class="story-item" onclick="window.openStoryStudio()">
+        <div class="story-add-squircle">
+            <ion-icon name="add" data-i18n="story_add_title"></ion-icon>
+        </div>
+        <div class="story-name" data-i18n="story_add">إضافة قصة</div>
+    </div>
+    
+    <div class="story-item">
+        <div class="story-squircle">
+            <img src="assets/img/profile.png" alt="User">
+        </div>
+        <div class="story-name">د. أحمد</div>
+    </div>
+</div>
+
+       <div class="create-post">
+                <div class="upper">
+                    <img id="creator-img" src="assets/img/profile.png" data-i18n="creator_img_title">
+                    <button class="fake-input" onclick="openPostModal('text')" style="flex:1; border-radius:30px; background:var(--input-bg); border:none; text-align:right; padding:10px 20px; color:var(--text-sub); cursor:pointer;" data-i18n="feed_placeholder">بماذا تفكر يا دكتور؟</button>
+                </div>
+                <div class="shortcuts">
+                    <div class="shortcut-btn" onclick="openPostModal('text')">
+                        <ion-icon name="text" style="color: var(--primary); font-size: 22px;" data-i18n="btn_text_title"></ion-icon> 
+                        <span data-i18n="btn_text">نص</span>
+                    </div>
+                    <div class="shortcut-btn" onclick="openPostModal('image')">
+                        <ion-icon name="image" style="color: var(--success); font-size: 22px;" data-i18n="btn_image_title"></ion-icon> 
+                        <span data-i18n="btn_image">صورة</span>
+                    </div>
+                    <div class="shortcut-btn" onclick="openPostModal('video')">
+                        <ion-icon name="videocam" style="color: #f59e0b; font-size: 22px;" data-i18n="btn_video_title"></ion-icon> 
+                        <span data-i18n="btn_video">فيديو</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="posts-container">
+                <div style="text-align: center; padding: 50px; color: var(--text-sub);">
+                    <ion-icon name="sync-outline" style="font-size: 40px; animation: spin 1s linear infinite;"></ion-icon>
+                    <p >جاري تحميل المجتمع...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+   <div id="profileSlidePage" class="slide-page">
+        <div class="slide-header">
+            <button class="back-btn-circle" onclick="closeSPA('profileSlidePage')"><ion-icon name="arrow-forward-outline" data-i18n="btn_back_title"></ion-icon></button>
+            <div style="font-weight: 800; font-size: 18px;" id="pro-header-title" data-i18n="nav_profile">الملف الشخصي</div>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="pro-container">
+            <div class="pro-header-clean">
+                
+                <div class="pro-avatar-wrapper">
+                    <img id="pro-pic" src="assets/img/profile.png" class="pro-avatar">
+                    <label for="upload-pro-pic" class="pro-edit-avatar" id="pro-edit-pic-btn" style="display: none;" data-i18n="edit_pic_title">
+                        <ion-icon name="camera"></ion-icon>
+                    </label>
+                    <input type="file" id="upload-pro-pic" hidden onchange="window.updateProfilePic(event)">
+                </div>
+
+                <h1 class="pro-name" id="pro-name" >جاري التحميل...</h1>
+                <div class="pro-role" id="pro-role">...</div>
+                <div class="pro-bio" id="pro-bio"></div>
+
+                <div class="pro-action-btns" id="pro-actions"></div>
+
+                <div class="pro-stats">
+                    <div class="pro-stat-item"><span id="pro-posts-count">0</span> <div data-i18n="stat_posts">منشور</div></div>
+                    <div class="pro-stat-item"><span id="pro-followers-count">0</span> <div data-i18n="stat_followers">متابع</div></div>
+                    <div class="pro-stat-item"><span id="pro-following-count">0</span> <div data-i18n="stat_following">يتابع</div></div>
+                </div>
+                <div class="pro-tabs">
+                    <div class="pro-tab active" onclick="window.switchProTab('tab-posts', this)" data-i18n="tab_posts">المنشورات</div>
+                    <div class="pro-tab" onclick="window.switchProTab('tab-media', this)" data-i18n="tab_media">الوسائط</div>
+                    <div class="pro-tab" onclick="window.switchProTab('tab-about', this)" data-i18n="tab_about">حول</div>
+                </div>
+            </div>
+             <div id="night-duty-section" style="display: none; background: rgba(0, 210, 255, 0.05); border: 1px solid var(--blue); padding: 15px; border-radius: 15px; margin-bottom: 20px; justify-content: space-between; align-items: center;">
+    <div>
+        <h4 style="margin: 0; color: var(--text-main); font-size: 15px;" data-i18n="night_duty_title">المناوبة الليلية 🌙</h4>
+        <p style="margin: 0; font-size: 11px; color: var(--text-sub);" data-i18n="night_duty_sub">أخبر المرضى أنك متواجد الآن</p>
+    </div>
+    <button id="night-duty-btn" onclick="window.toggleNightDuty()" class="hm-btn" style="width: auto; margin: 0; background: var(--card-bg); border: 1px solid var(--border-color); color: white; padding: 8px 15px;" data-i18n="btn_activate">تفعيل ✅</button>
+</div>
+
+<div id="pharmacist-radar-section" style="display: none;">
+    <h3 style="color: var(--purple); font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;" data-i18n="med_radar_title">
+        <ion-icon name="radio-outline" style="animation: spin 3s linear infinite;" data-i18n="med_radar_icon_title"></ion-icon> نداءات المرضى للأدوية المفقودة:
+    </h3>
+    
+    <div id="pharmacist-med-requests" style="display: flex; flex-direction: column; gap: 10px;">
+        </div>
+</div>
+            <div class="pro-content-area">
+                <div id="tab-posts" class="pro-tab-content active">
+                    <div id="pro-posts-container"></div>
+                </div>
+                <div id="tab-media" class="pro-tab-content">
+                    <div id="pro-media-container" class="media-grid"></div>
+                </div>
+                <div id="tab-about" class="pro-tab-content">
+                    <div id="pro-about-card" style="padding: 20px; background: var(--card-bg); margin-top: 8px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div id="postDetailsSlidePage" class="slide-page" style="z-index: 10001; background: var(--bg-app);">
+    <div class="slide-header">
+        <button class="back-btn-circle" onclick="window.closeSPA('postDetailsSlidePage')">
+            <ion-icon name="arrow-forward-outline" data-i18n="btn_back_title"></ion-icon>
+        </button>
+        <div style="font-weight: 800; font-size: 18px;" data-i18n="post_details_title">المنشور</div>
+        <div style="width: 40px;"></div>
+    </div>
+
+    <div id="pd-scroll-area" style="overflow-y: auto; height: calc(100vh - 135px); padding-bottom: 20px;">
+        <div id="pd-post-container" style="background: var(--card-bg); margin-bottom: 10px; border-bottom: 1px solid var(--border-app); box-shadow: var(--shadow);"></div>
+        
+        <div style="padding: 10px 15px; font-weight: bold; color: var(--text-main);" data-i18n="action_comment">التعليقات</div>
+        
+        <div id="pd-comments-list" style="padding: 0 15px;">
+            <div style="text-align: center; padding: 30px; color: var(--text-sub);">
+                <ion-icon name="sync" style="animation: spin 1s infinite; font-size: 30px;"></ion-icon>
+            </div>
+        </div>
+    </div>
+
+    <div class="comment-input-bar" style="position: absolute; bottom: 0; left: 0; right: 0; background: var(--card-bg); border-top: 1px solid var(--border-app); padding: 10px 15px; display: flex; gap: 10px; align-items: center; z-index: 10; height: 70px;">
+        
+        <div id="pd-reply-badge" style="display: none; position: absolute; top: -30px; right: 15px; background: var(--primary); color: white; padding: 3px 15px; border-radius: 15px 15px 0 0; font-size: 12px; box-shadow: 0 -2px 5px rgba(0,0,0,0.1);">
+            <span data-i18n="reply_to_text">رد على:</span> <span id="pd-reply-name" style="font-weight: bold;"></span>
+            <ion-icon name="close-circle" onclick="window.cancelReply()" style="cursor: pointer; margin-right: 5px; vertical-align: middle; font-size: 16px;" data-i18n="btn_cancel_reply_title"></ion-icon>
+        </div>
+
+        <img id="pd-my-avatar" src="assets/img/profile.png" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-app);">
+       <input type="text" id="pd-comment-input" data-i18n="write_comment" placeholder="اكتب تعليقاً..." style="flex: 1; border-radius: 20px; border: 1px solid var(--border-app); padding: 10px 15px; background: var(--input-bg); outline: none; color: var(--text-main); font-family: 'Cairo';">
+        <button id="pd-send-btn" onclick="window.submitComment()" style="background: var(--input-bg); border: none; color: var(--primary); font-size: 20px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" data-i18n="btn_send_title">
+            <ion-icon name="send"></ion-icon>
+        </button>
+    </div>
+</div>
+<div id="settingsSlidePage" class="slide-page">
+        <div class="slide-header">
+            <button class="back-btn-circle" onclick="closeSPA('settingsSlidePage')">
+                <ion-icon name="arrow-forward-outline" data-i18n="btn_back_title"></ion-icon>
+            </button>
+            <div style="font-weight: 800; font-size: 18px;" data-i18n="settings_title">الإعدادات</div>
+            <div style="width: 40px;"></div>
+        </div>
+        
+        <div class="settings-container">
+            <section class="settings-section">
+                <h3>
+                    <ion-icon name="person-outline" data-i18n="sec_account_icon_title"></ion-icon> 
+                    <span data-i18n="sec_account">الأمان والحساب</span>
+                </h3>
+                <div class="setting-item" onclick="resetUserPassword()">
+                    <div class="info">
+                        <strong data-i18n="opt_reset_pass">إعادة تعيين كلمة المرور</strong>
+                        <p data-i18n="sub_reset_pass">إرسال رابط التغيير إلى بريدك الإلكتروني</p>
+                    </div>
+                    <ion-icon name="chevron-forward-outline" class="dir-icon"></ion-icon>
+                </div>
+                <div class="setting-item" onclick="changeUserEmail()">
+                    <div class="info">
+                        <strong data-i18n="opt_change_email">تحديث البريد الإلكتروني</strong>
+                        <p data-i18n="sub_change_email">تغيير العنوان المرتبط بحسابك</p>
+                    </div>
+                    <ion-icon name="chevron-forward-outline" class="dir-icon"></ion-icon>
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h3>
+                    <ion-icon name="shield-checkmark-outline" data-i18n="sec_privacy_icon_title"></ion-icon> 
+                    <span data-i18n="sec_privacy">الخصوصية</span>
+                </h3>        
+                <div class="setting-item">
+                    <div class="info">
+                        <strong data-i18n="opt_private_acc">حساب خاص (Private)</strong>
+                        <p data-i18n="sub_private_acc">لن يرى منشوراتك إلا من يتابعك</p>
+                    </div><label class="toggle-switch">
+                        <input type="checkbox" id="toggle-private" onchange="window.updatePrivacySetting('isPrivate', this.checked)">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <div class="info">
+                        <strong data-i18n="opt_hide_follows">إخفاء قائمة المتابعات</strong>
+                        <p data-i18n="sub_hide_follows">لن يتمكن الآخرون من رؤية من تتابع</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-hide-follows" onchange="window.updatePrivacySetting('hideFollows', this.checked)">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </section>
+            <section class="settings-section">
+                <h3>
+                    <ion-icon name="language-outline" data-i18n="sec_prefs_icon_title"></ion-icon> 
+                    <span data-i18n="sec_prefs">التفضيلات</span>
+                </h3>
+                <div class="setting-item">
+                    <div class="info">
+                        <strong data-i18n="opt_lang">لغة التطبيق</strong>
+                        <p data-i18n="sub_lang">تغيير لغة واجهة المستخدم</p>
+                    </div>
+                    <select id="language-select" onchange="changeLanguage(this.value)">
+                        <option value="ar" data-i18n="lang_ar">العربية</option>
+                        <option value="fr" data-i18n="lang_fr">Français</option>
+                        <option value="en" data-i18n="lang_en">English</option>
+                    </select>
+                </div>
+            </section>
+
+           <section class="settings-section">
+                <h3><ion-icon name="help-circle-outline" data-i18n="sec_support_icon_title"></ion-icon> <span data-i18n="sec_support">الدعم والمساعدة</span></h3>
+                <div class="setting-item" onclick="openSupportModal()">
+                    <div class="info">
+                        <strong data-i18n="opt_contact">اتصل بالمطور</strong>
+                        <p data-i18n="sub_contact">للمساعدة التقنية أو التبليغ عن مشاكل</p>
+                    </div>
+                    <ion-icon name="mail-outline" data-i18n="opt_contact_icon_title"></ion-icon>
+                </div>
+            </section>
+
+            <section class="settings-section danger-zone">
+                <h3><ion-icon name="warning-outline" data-i18n="sec_danger_icon_title"></ion-icon> <span data-i18n="sec_danger">منطقة الخطر</span></h3>
+                
+                <div class="setting-item" onclick="window.openBlockedUsersModal()">
+                    <div class="info">
+                        <strong data-i18n="opt_block_list">قائمة الحظر 🚫</strong>
+                        <p data-i18n="sub_block_list">إدارة الحسابات التي قمت بحظرها مسبقاً</p>
+                    </div>
+                    <ion-icon name="ban-outline" data-i18n="opt_block_list_icon_title"></ion-icon>
+                </div>
+
+                <div class="setting-item" onclick="deleteUserAccount()">
+                    <div class="info">
+                        <strong style="color: var(--danger);" data-i18n="opt_delete_acc">حذف الحساب نهائياً</strong>
+                        <p data-i18n="sub_delete_acc">سيتم مسح جميع بياناتك ومنشوراتك</p>
+                    </div>
+                    <ion-icon name="trash-outline" style="color: var(--danger);" data-i18n="opt_delete_acc_icon_title"></ion-icon>
+                </div>
+            </section>
+
+ <div id="chatSlidePage" class="slide-page">
+    <div class="slide-header">
+        <button class="back-btn-circle" onclick="closeSPA('chatSlidePage')">
+            <ion-icon name="arrow-forward-outline" data-i18n="btn_back_title"></ion-icon>
+        </button>
+        <div style="font-weight: 800; font-size: 18px;" data-i18n="nav_messages">نظام المراسلة</div>
+        <div style="width: 40px;"></div>
+    </div>
+    
+    <div id="chat-lobby-view" style="display: none; padding: 25px; height: calc(100vh - 60px); overflow-y: auto;">
+        
+        <h2 class="lobby-welcome" data-i18n="lobby_welcome_text">مرحباً دكتور، <br><span>أين تريد الذهاب اليوم؟ 👇</span></h2>
+        
+        <div class="epic-lobby-card" onclick="window.openGlobalMedicalRoom()">
+            <div class="epic-icon-box global-gradient"><ion-icon name="earth"></ion-icon></div>
+            <div class="epic-lobby-info">
+                <h3 data-i18n="lobby_global_title">الغرفة الطبية العالمية</h3>
+                <p data-i18n="lobby_global_sub">ساحة نقاش عامة تجمع الأطباء والصيادلة فقط لتبادل الخبرات.</p>
+            </div>
+            <ion-icon name="chevron-back-outline" class="epic-arrow"></ion-icon>
+        </div>
+
+       <div class="epic-lobby-card" id="lobby-card-peers" onclick="window.PeerChatSystem.openInbox()">
+    <div class="epic-icon-box peer-gradient" style="position: relative;">
+        <ion-icon name="medkit"></ion-icon>
+        <span id="badge-peers" style="display: none; position: absolute; top: -5px; right: -5px; width: 14px; height: 14px; background: var(--danger); border-radius: 50%; border: 3px solid var(--card-bg);"></span>
+    </div>
+    <div class="epic-lobby-info">
+        <h3 data-i18n="lobby_peers_title">زملاء المهنة (خاص)</h3>
+        <p data-i18n="lobby_peers_sub">رسائل خاصة ومباشرة مع زملائك من الأطباء والصيادلة.</p>
+    </div>
+    <ion-icon name="chevron-back-outline" class="epic-arrow"></ion-icon>
+</div>
+<div class="epic-lobby-card" id="lobby-card-patients" style="display: none;" onclick="window.DoctorPatientChatSystem.openInbox()">
+    <div class="epic-icon-box private-gradient" style="position: relative;">
+        <ion-icon name="chatbubbles"></ion-icon>
+        <span id="badge-patients" style="display: none; position: absolute; top: -5px; right: -5px; width: 14px; height: 14px; background: var(--danger); border-radius: 50%; border: 3px solid var(--card-bg);"></span>
+    </div>
+    <div class="epic-lobby-info">
+        <h3 data-i18n="lobby_patients_title">استشارات المرضى</h3>
+        <p data-i18n="lobby_patients_sub">صندوق الوارد الخاص بك للرد على أسئلة المرضى ومتابعتهم.</p>
+    </div>
+    <ion-icon name="chevron-back-outline" class="epic-arrow"></ion-icon>
+</div>
+    </div>
+
+    <div id="chat-inbox-view" style="display: none; height: calc(100vh - 60px); overflow-y: auto;">
+        <div style="padding: 15px; font-weight: bold; color: var(--text-main); border-bottom: 1px solid var(--border-app);" id="inbox-title" data-i18n="inbox_recent_title">الرسائل الأخيرة</div>
+        <div id="inbox-list">
+            <div style="text-align: center; padding: 50px; color: var(--text-sub);">
+                <ion-icon name="mail-unread-outline" style="font-size: 60px; opacity: 0.5; margin-bottom: 10px;"></ion-icon>
+                <p data-i18n="msg_empty_inbox">لا توجد رسائل حالياً</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="chatRoomSlidePage" class="slide-page">
+    <div style="display: flex; flex-direction: column; height: 100vh; background: var(--bg-app);">
+        
+        <div class="slide-header" style="justify-content: flex-start; gap: 15px; padding: 10px 15px; border-bottom: 1px solid var(--border-app); background: var(--card-bg);">
+            <button class="back-btn-circle" onclick="window.closeChatRoom()" style="margin:0;"><ion-icon name="arrow-forward-outline" data-i18n="btn_back_title"></ion-icon></button>
+            <img id="active-chat-avatar" src="assets/img/profile.png" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">
+            <div style="flex: 1; line-height: 1.2;">
+                <div id="active-chat-name" style="font-weight: bold; font-size: 16px; color: var(--text-main);">...</div>
+                <div id="active-chat-status" style="font-size: 12px; color: var(--success);"><ion-icon name="ellipse" style="font-size: 8px; margin-left: 3px;"></ion-icon> <span data-i18n="chat_secure">متصل ومحمي 🔒</span></div>
+            </div>
+
+        </div>
+
+        <div id="chat-messages-area" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth;">
+            </div>
+
+        <div id="chat-reply-preview" style="display: none; padding: 8px 15px; background: var(--input-bg); border-top: 1px solid var(--border-app); font-size: 12px; color: var(--text-sub); justify-content: space-between; align-items: center;">
+            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-right: 3px solid var(--primary); padding-right: 10px;">
+                <strong id="reply-preview-name" style="color: var(--primary);"></strong> <span id="reply-preview-text"></span>
+            </div>
+            <ion-icon name="close-circle" style="font-size: 20px; cursor: pointer; color: var(--danger);" onclick="window.cancelChatReply()" data-i18n="btn_cancel_reply_title"></ion-icon>
+        </div>
+
+        <div style="background: var(--card-bg); padding: 10px 15px; border-top: 1px solid var(--border-app); display: flex; align-items: center; gap: 10px; padding-bottom: 15px;">
+            
+            <div style="display: flex; gap: 8px;">
+                <button onclick="window.showToast(window.translations[localStorage.getItem('app_lang')||'ar'].msg_emoji_soon)" style="background: rgba(0,0,0,0.05); border: none; width: 35px; height: 35px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer;" data-i18n="chat_emoji_title">
+                    <ion-icon name="happy-outline" style="color: #f59e0b; font-size: 20px;"></ion-icon>
+                </button>
+
+                <label for="chat-media-upload" style="background: rgba(0,0,0,0.05); width: 35px; height: 35px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer;" data-i18n="chat_add_image_title">
+                    <ion-icon name="image-outline" style="color: #10b981; font-size: 20px;"></ion-icon>
+                </label>
+                <input type="file" id="chat-media-upload" accept="image/*,video/*" hidden onchange="window.handleChatMediaUpload(event)">
+
+                <label for="chat-file-upload" style="background: rgba(0,0,0,0.05); width: 35px; height: 35px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer;" data-i18n="chat_add_file_title">
+                    <ion-icon name="document-text-outline" style="color: #6366f1; font-size: 20px;"></ion-icon>
+                </label>
+                <input type="file" id="chat-file-upload" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" hidden onchange="window.handleSecureFileUpload(event)">
+            </div>
+            
+           <input type="text" id="chat-input-field" data-i18n="chat_placeholder" placeholder="اكتب رسالتك..." maxlength="500" style="flex: 1; background: var(--input-bg); border: 1px solid var(--border-app); padding: 10px 15px; border-radius: 20px; outline: none; font-family: 'Cairo'; color: var(--text-main); font-size: 14px;" onkeypress="if(event.key === 'Enter') window.sendGlobalMessage()">
+            
+            <button onclick="window.sendGlobalMessage()" style="background: var(--primary); border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; cursor: pointer;" data-i18n="btn_send_title">
+                <ion-icon name="send" style="transform: rotate(180deg); margin-left: -3px;"></ion-icon>
+            </button>
+        </div>
+    </div>
+</div>
+    </div>
+    <div id="post-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="modal_post_title">إنشاء منشور</h2>
+                <span class="close-modal" onclick="document.getElementById('post-modal').style.display='none'"><ion-icon name="close" data-i18n="btn_close_title"></ion-icon></span>
+            </div>
+            
+            <textarea id="post-input" class="modal-input" data-i18n="post_input_placeholder" placeholder="اكتب استشارتك أو حالتك الطبية..."></textarea>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <label for="post-file-upload" style="cursor: pointer; color: var(--success); font-weight: bold; display: flex; align-items: center; gap: 5px;" data-i18n="attach_media_title">
+                    <ion-icon name="cloud-upload" style="font-size: 24px;"></ion-icon> <span data-i18n="tab_media">إرفاق وسائط</span>
+                </label>
+                <input id="post-file-upload" type="file" accept="image/*,video/*" hidden onchange="document.getElementById('post-file-name').innerText = (window.translations[localStorage.getItem('app_lang')||'ar'].alert_success || 'تم اختيار الملف بنجاح ✓')" />
+                <span id="post-file-name" style="font-size: 12px; color: var(--text-sub)" data-i18n="no_file_selected">لم يتم اختيار ملف</span>
+            </div>
+
+            <button id="publish-btn" class="modal-btn" onclick="publishPost()" data-i18n="btn_publish">نشر الآن</button>
+        </div>
+    </div>
+     <div class="search-overlay" id="searchOverlay">
+        <div class="search-header">
+            <ion-icon name="arrow-forward-outline" style="font-size: 28px; cursor: pointer; color: var(--text-main);" onclick="closeSearchOverlay()" data-i18n="btn_back_title"></ion-icon>
+            <div class="search-input-box">
+                <input type="text" id="searchInput" data-i18n="search_placeholder" placeholder="اكتب للبحث..." onkeyup="performAdvancedSearch()">
+                <ion-icon name="search" style="color: var(--primary);"></ion-icon>
+            </div>
+        </div>
+        <div class="search-results" id="searchResultsArea">
+            <div style="text-align:center; padding: 40px; color: var(--text-sub);" data-i18n="search_placeholder">اكتب للبحث...</div>
+        </div>
+    </div>
+<div id="storyViewer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:999999; flex-direction:column;">
+    <div id="storyProgressBars" style="display:flex; gap:4px; padding:15px 10px 5px; position:absolute; top:0; left:0; width:100%; z-index:20;"></div>
+    
+    <div style="position:absolute; top:25px; left:0; width:100%; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; z-index:20; background:linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);">
+        <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="window.closeStoryViewer(); window.openProfileSlide(window.allGroupedStories[window.currentStoryUserIdx].authorId)">
+            <img id="storyViewerPic" src="" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--primary); object-fit:cover;">
+            <div>
+                <strong style="color:white; font-size:15px; display:flex; align-items:center; gap:5px;">
+                    <span id="storyViewerName" data-i18n="default_user_name">مستخدم</span>
+                    <span id="storyVerifiedBadge" style="display:none; color:#1da1f2; font-size:14px;"><ion-icon name="checkmark-circle"></ion-icon></span>
+                </strong>
+                <small id="storyViewerTime" data-i18n="time_now" style="color:#ddd; font-size:11px; display:block;">الآن</small>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:15px;">
+            <ion-icon name="ellipsis-horizontal" id="storyOptionsBtn" style="color:white; font-size:24px; cursor:pointer; display:none;" onclick="window.toggleStoryOptions()"></ion-icon>
+            <ion-icon name="close" style="color:white; font-size:32px; cursor:pointer; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));" onclick="window.closeStoryViewer()"></ion-icon>
+        </div>
+        <div id="storyOptionsMenu" style="display:none; position:absolute; top:60px; left:15px; background:var(--card-bg, #222); border-radius:8px; padding:5px; z-index:100; min-width:150px;"></div>
+    </div>
+
+    <div style="flex:1; position:relative; display:flex; justify-content:center; align-items:center; overflow:hidden;">
+        <div onclick="window.prevStory()" style="position:absolute; top:15%; left:0; width:30%; height:70%; z-index:15;"></div>
+        <div id="storyContentMedia" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;"></div>
+        <div onclick="window.nextStory()" style="position:absolute; top:15%; right:0; width:70%; height:70%; z-index:15;"></div>
+    </div>
+   
+   <div id="storyReplyBar" style="position:absolute; bottom:0; left:0; width:100%; padding:15px; background:linear-gradient(to top, rgba(0,0,0,0.8), transparent); z-index:20; display:none; gap:10px; align-items:center;">
+        <input type="text" id="storyReplyInput" data-i18n="story_reply_placeholder" placeholder="إرسال رسالة..." style="flex:1; border-radius:30px; padding:12px 20px; background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); color:white; outline:none; font-family:'Cairo'; backdrop-filter:blur(5px);" onfocus="clearTimeout(window.storyTimer)" onblur="window.resumeStoryTimer()">
+        <div style="display:flex; gap:10px; font-size:26px;">
+            <span onclick="window.sendQuickStoryReaction('❤️')" style="cursor:pointer;">❤️</span>
+            <span onclick="window.sendQuickStoryReaction('😂')" style="cursor:pointer;">😂</span>
+        </div>
+        <button onclick="window.replyToStory()" style="background:var(--primary); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:18px;">
+            <ion-icon name="send" style="transform:rotate(180deg); margin-left:-3px;"></ion-icon>
+        </button>
+        <button onclick="window.likeCurrentStory(this)" id="storyLikeBtn" style="background:none; border:none; color:white; font-size:32px; cursor:pointer; display:flex; align-items:center;">
+            <ion-icon name="heart-outline"></ion-icon>
+        </button>
+    </div>
+
+    <div id="storyOwnerBar" style="position:absolute; bottom:20px; left:0; width:100%; display:none; justify-content:center; z-index:20;">
+        <button onclick="window.viewStoryLikes()" style="background: rgba(0,0,0,0.6); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 25px; border-radius: 30px; font-family: 'Cairo'; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.2s;">
+            <ion-icon name="heart" style="color: var(--danger); font-size: 22px;"></ion-icon>
+            <span id="story-likes-count">0</span> <span data-i18n="likes_count_text">إعجابات</span>
+        </button>
+    </div>
+
+</div>
+
+<div id="storyStudioPage" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:999999; flex-direction:column;">
+    <div style="position:absolute; top:20px; left:0; right:0; padding:0 20px; display:flex; justify-content:space-between; align-items:center; z-index:10;">
+        <ion-icon name="close-outline" style="color:white; font-size:35px; cursor:pointer; text-shadow:0 2px 4px rgba(0,0,0,0.5);" onclick="window.closeStoryStudio()"></ion-icon>
+        <div style="display:flex; gap:20px; align-items:center;">
+            <div onclick="window.toggleTextStoryMode()" style="color:white; font-weight:bold; font-family:'Cairo'; cursor:pointer; text-shadow:0 2px 4px rgba(0,0,0,0.5); font-size:20px;">Aa</div>
+            <ion-icon name="color-wand-outline" style="color:white; font-size:30px; cursor:pointer; text-shadow:0 2px 4px rgba(0,0,0,0.5);" onclick="window.cycleStudioFilter()"></ion-icon>
+            <ion-icon name="camera-reverse-outline" id="studio-flip-btn" style="color:white; font-size:30px; cursor:pointer; text-shadow:0 2px 4px rgba(0,0,0,0.5);" onclick="window.flipCamera()"></ion-icon>
+        </div>
+    </div>
+
+    <video id="studio-camera-preview" autoplay playsinline style="width:100%; height:100%; object-fit:cover; background:#111; transition:filter 0.3s;"></video>
+    
+    <div id="studio-text-bg" style="display:none; width:100%; height:100%; background:linear-gradient(45deg, #ff9a9e, #fecfef); position:absolute; top:0; left:0; z-index:4; justify-content:center; align-items:center; padding:20px;">
+        <textarea id="studio-text-only-input" data-i18n="story_text_placeholder" placeholder="اكتب قصتك هنا..." style="width:100%; height:50vh; background:transparent; border:none; color:white; font-size:30px; font-family:'Cairo'; text-align:center; outline:none; font-weight:bold; resize:none; text-shadow:0 2px 5px rgba(0,0,0,0.3);"></textarea>
+        <div style="position:absolute; bottom:120px; display:flex; gap:15px;">
+            <div onclick="window.changeTextBg('#ff9a9e, #fecfef')" style="width:30px; height:30px; border-radius:50%; background:linear-gradient(45deg, #ff9a9e, #fecfef); cursor:pointer; border:2px solid white;"></div>
+            <div onclick="window.changeTextBg('#4facfe, #00f2fe')" style="width:30px; height:30px; border-radius:50%; background:linear-gradient(45deg, #4facfe, #00f2fe); cursor:pointer; border:2px solid white;"></div>
+            <div onclick="window.changeTextBg('#1a1a1a, #333333')" style="width:30px; height:30px; border-radius:50%; background:#1a1a1a; cursor:pointer; border:2px solid white;"></div>
+        </div>
+    </div>
+
+    <img id="studio-photo-preview" style="display:none; width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:5;">
+
+    <div id="studio-controls" style="position:absolute; bottom:30px; left:0; right:0; display:flex; justify-content:space-around; align-items:center; z-index:10; padding:0 20px;">
+        <label for="studio-gallery-upload" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; color:white;">
+            <div style="width:40px; height:40px; border-radius:10px; border:2px solid white; display:flex; justify-content:center; align-items:center; background:rgba(255,255,255,0.2);">
+                <ion-icon name="images" style="font-size:24px;"></ion-icon>
+            </div>
+        </label>
+        <input type="file" id="studio-gallery-upload" accept="image/*,video/*" hidden onchange="window.handleStudioGallery(event)">
+
+        <div onclick="window.captureStudioPhoto()" style="width:80px; height:80px; border-radius:50%; border:4px solid white; display:flex; justify-content:center; align-items:center; cursor:pointer;">
+            <div style="width:65px; height:65px; background:white; border-radius:50%; transition:0.2s;" onmousedown="this.style.transform='scale(0.8)'" onmouseup="this.style.transform='scale(1)'"></div>
+        </div>
+        <div style="width:40px;"></div>
+    </div>
+
+    <div id="studio-publish-bar" style="display:none; position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.8); padding:15px 20px; z-index:10; flex-direction:column; gap:10px;">
+        <input type="text" id="studio-caption" data-i18n="story_caption_placeholder" placeholder="اكتب وصفاً للقصة..." style="width:100%; background:transparent; border:none; color:white; outline:none; font-size:16px; font-family:'Cairo'; text-align:center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+            <button onclick="window.retakeStudio()" style="background:none; border:none; color:white; font-size:16px; font-family:'Cairo'; cursor:pointer;" data-i18n="btn_cancel">إلغاء</button>
+            <button id="btn-publish-story-final" onclick="window.publishStudioStory()" style="background:var(--primary); color:white; border:none; padding:10px 25px; border-radius:20px; font-size:16px; font-weight:bold; font-family:'Cairo'; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                <span data-i18n="btn_publish_story">نشر قصتي</span> <ion-icon name="chevron-forward-outline"></ion-icon>
+            </button>
+        </div>
+    </div>
+</div>
+
+    <div id="support-modal" class="modal">
+        <div class="developer-card-ultra">
+            <span class="close-ultra" onclick="closeSupportModal()">&times;</span>
+            <div class="card-banner"></div>
+            <div class="card-body">
+                <div class="dev-avatar-container">
+                    <img src="assets/img/profile.png" class="dev-img-ultra">
+                    <span class="status-dot"></span>
+                </div>
+                <div class="dev-info-ultra">
+                    <h2>ILYAS LAHKDARI <span class="badge">PRO</span></h2>
+                    <p data-i18n="dev_bio">Computer Science Student • Batna 1 University</p>
+                    <div class="tags">
+                        <span>Full-Stack</span><span>Firebase</span><span>UI/UX</span>
+                    </div>
+                </div>
+                <div class="contact-grid">
+                    <div class="contact-card" onclick="window.location.href='mailto:ilyashosam6@gmail.com'">
+                        <ion-icon name="mail-outline"></ion-icon><span data-i18n="contact_email">Email</span>
+                    </div>
+                    <div class="contact-card" onclick="window.open('https://github.com/YOUR_USERNAME', '_blank')">
+                        <ion-icon name="logo-github"></ion-icon><span data-i18n="contact_github">GitHub</span>
+                    </div>
+                    <div class="contact-card" onclick="window.open('https://linkedin.com/in/YOUR_USERNAME', '_blank')">
+                        <ion-icon name="logo-linkedin"></ion-icon><span data-i18n="contact_linkedin">LinkedIn</span>
+                    </div>
+                </div>
+                <button class="hire-btn" onclick="window.open('https://wa.me/213XXXXXXXXX', '_blank')">
+                    <ion-icon name="chatbubble-ellipses-outline"></ion-icon> <span data-i18n="btn_direct_contact">Direct Contact</span>
+                </button>
+            </div>
+            <div class="card-footer-ultra" data-i18n="footer_copyright">Healthmate Community Project © 2026 • Made in Batna</div>
+        </div>
+    </div>
+  <div id="editProfileModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 data-i18n="edit_profile_title">تعديل الملف المهني</h2>
+            <ion-icon name="close" style="cursor:pointer; font-size: 28px;" onclick="document.getElementById('editProfileModal').style.display='none'" data-i18n="btn_close_title"></ion-icon>
+        </div>
+        
+        <label data-i18n="lbl_full_name">الاسم الكامل:</label>
+        <input type="text" id="edit-name" class="modal-input">
+        
+        <label data-i18n="lbl_specialty">التخصص:</label>
+        <input type="text" id="edit-specialty" class="modal-input">
+        
+        <label data-i18n="lbl_bio">نبذة تعريفية:</label>
+        <textarea id="edit-bio" class="modal-input" style="height: 80px; resize: none;"></textarea>
+        
+        <label data-i18n="lbl_insta">رابط انستجرام:</label>
+        <input type="text" id="edit-insta" class="modal-input" dir="ltr">
+        
+        <label data-i18n="lbl_phone">رقم الهاتف:</label>
+        <input type="text" id="edit-phone" class="modal-input" dir="ltr">
+        
+        <label data-i18n="lbl_hours">ساعات العمل:</label>
+        <input type="text" id="edit-working-hours" class="modal-input">
+        
+        <label data-i18n="lbl_location">العنوان (رابط الخريطة):</label>
+        <input type="text" id="edit-location" class="modal-input" dir="ltr">
+
+        <div style="background: rgba(0, 210, 255, 0.05); border: 1px dashed var(--blue); padding: 15px; border-radius: 10px; text-align: center; margin: 15px 0;">
+            <p style="margin: 0 0 10px 0; font-size: 12px; color: #888;" data-i18n="gps_radar_notice">ليتمكن المرضى من إيجادك في "رادار الصحة"، التقط إحداثياتك من العيادة/الصيدلية:</p>
+            
+            <button onclick="window.fetchMyGPSLocation()" style="background: var(--blue); color: black; border: none; padding: 10px; border-radius: 8px; font-family: 'Cairo'; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;">
+                <ion-icon name="location" style="font-size: 18px;"></ion-icon> <span data-i18n="btn_capture_gps">التقاط إحداثيات موقعي الآن</span>
+            </button>
+            
+            <input type="hidden" id="edit-pro-lat">
+            <input type="hidden" id="edit-pro-lng">
+            <p id="gps-status-text" style="margin: 10px 0 0 0; font-size: 11px; font-weight: bold; color: var(--orange);" data-i18n="gps_not_set">لم يتم تحديد الموقع بعد</p>
+        </div>
+        
+      <div style="display: flex; gap: 10px;">
+            <button class="modal-btn" onclick="saveProfile()" style="flex: 2; background: var(--blue); color: black; border:none; font-weight:bold;" data-i18n="btn_save_changes">حفظ التغييرات</button>
+            <button class="modal-btn" onclick="document.getElementById('editProfileModal').style.display='none'" style="flex: 1; background: #888; border:none; color:white;" data-i18n="btn_cancel">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div id="usersListModal" class="modal">
+        <div class="modal-content" style="max-height: 70vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h2 id="usersListTitle" data-i18n="modal_list_title">القائمة</h2>
+                <ion-icon name="close" style="cursor:pointer; font-size: 28px;" onclick="document.getElementById('usersListModal').style.display='none'" data-i18n="btn_close_title"></ion-icon>
+            </div>
+            
+            <div id="usersListContainer" style="overflow-y: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 15px;">
+                <div style="text-align: center; color: var(--text-sub);">جاري التحميل...</div>
+            </div>
+        </div>
+    </div>
+
+   <div id="notificationsSlidePage" class="slide-page">
+    <div class="slide-header">
+        <button class="back-btn-circle" onclick="window.closeSPA('notificationsSlidePage')">
+            <ion-icon name="arrow-forward-outline" data-i18n="btn_back_title"></ion-icon>
+        </button>
+        <div style="font-weight: 800; font-size: 18px;" data-i18n="nav_notifications">الإشعارات</div>
+        
+        <button onclick="window.markAllNotisAsRead()" style="background:none; border:none; color:var(--primary); font-size:26px; cursor:pointer; padding: 0 10px;" data-i18n="btn_mark_read_title">
+            <ion-icon name="checkmark-done-outline"></ion-icon>
+        </button>
+    </div>
+    
+    <div id="notifications-container" style="padding: 10px 0;"></div>
+</div>
+<div id="edit-post-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="opt_edit">تعديل المنشور</h2>
+                <span class="close-modal" onclick="document.getElementById('edit-post-modal').style.display='none'"><ion-icon name="close" data-i18n="btn_close_title"></ion-icon></span>
+            </div>
+            
+            <textarea id="edit-post-input" class="modal-input" data-i18n="edit_post_placeholder" placeholder="قم بتعديل محتوى منشورك..."></textarea>
+            
+            <input type="hidden" id="edit-post-id">
+            
+            <button id="save-edit-btn" class="modal-btn" onclick="window.saveEditedPost()" data-i18n="btn_save_changes">حفظ التعديلات</button>
+        </div>
+    </div>
+      <div id="blocked-users-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-i18n="opt_block_list">قائمة الحظر 🚫</h2>
+                <span class="close-modal" onclick="document.getElementById('blocked-users-modal').style.display='none'"><ion-icon name="close" data-i18n="btn_close_title"></ion-icon></span>
+            </div>
+            <div id="blocked-users-list" style="max-height: 400px; overflow-y: auto; padding-top: 10px;">
+                </div>
+        </div>
+    </div>
+<div id="doctor-appointments-slide" class="slide-page">
+        <div class="slide-header">
+            <ion-icon name="arrow-forward-outline" class="back-btn" onclick="closeSPA('doctor-appointments-slide')" data-i18n="btn_back_title"></ion-icon>
+            <h2 data-i18n="appointments_management_title">إدارة المواعيد 🏥</h2>
+        </div>
+        
+        <div style="padding: 20px;">
+            <div id="doctor-apps-list" style="display: flex; flex-direction: column; gap: 15px;">
+                <p style="text-align:center; color:var(--text-sub); padding:50px;">
+                    <ion-icon name="sync" style="animation: spin 1s linear infinite; font-size: 30px;"></ion-icon><br>
+                    <span data-i18n="loading_patient_requests">جاري تحميل طلبات المرضى...</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="doctor-patient-inbox-slide" class="slide-page" style="z-index: 10001; background: var(--bg-app);">
+    <div class="slide-header">
+        <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.closeSPA('doctor-patient-inbox-slide')" data-i18n="btn_back_title"></ion-icon>
+        <h2 style="margin: 0; font-size: 18px;" data-i18n="lobby_patients_title">استشارات المرضى 🩺</h2>
+    </div>
+    <div style="padding: 20px;">
+        <div id="doc-patients-list"></div>
+    </div>
+</div>
+
+<div id="doctor-patient-chat-room" class="slide-page" style="z-index: 10002; background: var(--bg-app);">
+    
+    <div class="slide-header" style="justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.DoctorPatientChatSystem.closeRoom()" data-i18n="btn_back_title"></ion-icon>
+            <img id="d-chat-avatar" src="" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">
+            <div>
+                <h3 id="d-chat-name" style="margin: 0; font-size: 15px; color: var(--text-main);" data-i18n="patient_label">المريض</h3>
+                <small id="d-chat-status" style="color: var(--success); font-size: 11px;" data-i18n="patient_role">مريض</small>
+            </div>
+        </div>
+
+       <button id="d-view-cloud-btn" onclick="window.DoctorPatientChatSystem.viewPatientCloud()" style="background: var(--success); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; display: none; align-items: center; gap: 5px; font-weight: bold; cursor: pointer;">
+            <ion-icon name="folder-open"></ion-icon> <span data-i18n="btn_open_cloud">فتح ملفه السحابي</span>
+        </button>
+        <div id="d-locked-cloud" style="color: var(--danger); font-size: 11px; display: flex; align-items: center; gap: 3px; font-weight: bold;">
+            <ion-icon name="lock-closed"></ion-icon> <span data-i18n="msg_cloud_locked">الملف محمي</span>
+        </div>
+    </div>
+
+    <div id="d-chat-messages" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: var(--bg-app);"></div>
+
+    <div style="padding: 10px 15px; background: var(--card-bg); display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-app);">
+        <button onclick="document.getElementById('d-chat-file-upload').click()" style="background: transparent; color: var(--primary); border: none; font-size: 26px; cursor: pointer; display: flex;" data-i18n="btn_attach_title">
+            <ion-icon name="attach-outline"></ion-icon>
+        </button>
+        <input type="file" id="d-chat-file-upload" accept="image/*" style="display: none;" onchange="window.DoctorPatientChatSystem.uploadMedia(event)">
+        
+        <input type="text" id="d-chat-input" data-i18n="chat_doctor_reply_placeholder" placeholder="اكتب ردك للمريض..." style="flex: 1; background: var(--input-bg); border: 1px solid var(--border-app); padding: 12px 15px; border-radius: 20px; color: var(--text-main); outline: none; font-family: 'Cairo';">
+        
+        <button onclick="window.DoctorPatientChatSystem.sendMessage()" style="background: var(--primary); border: none; width: 42px; height: 42px; border-radius: 50%; color: white; display: flex; justify-content: center; align-items: center; cursor: pointer;" data-i18n="btn_send_title">
+            <ion-icon name="send" style="transform: rotate(180deg); font-size: 20px; margin-left: -3px;"></ion-icon>
+        </button>
+    </div>
+</div>
+
+
+<div id="peer-inbox-slide" class="slide-page" style="z-index: 10001; background: var(--bg-app);">
+    <div class="slide-header">
+        <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.closeSPA('peer-inbox-slide')" data-i18n="btn_back_title"></ion-icon>
+        <h2 style="margin: 0; font-size: 18px;" data-i18n="nav_peers_title">زملاء المهنة 🤝</h2>
+    </div>
+    <div style="padding: 20px;">
+        <div id="peer-list-container"></div>
+    </div>
+</div>
+<div id="peer-chat-room" class="slide-page" style="z-index: 10002; background: var(--bg-app);">
+    
+    <div class="slide-header" style="justify-content: flex-start; gap: 15px;">
+        <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.PeerChatSystem.closeRoom()" data-i18n="btn_back_title"></ion-icon>
+        <img id="peer-chat-avatar" src="" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">
+        <div>
+            <h3 id="peer-chat-name" style="margin: 0; font-size: 15px; color: var(--text-main);" data-i18n="peer_label">الزميل</h3>
+            <small id="peer-chat-role" style="color: var(--primary); font-size: 11px;" data-i18n="doctor_role">طبيب</small>
+        </div>
+    </div>
+
+    <div id="peer-chat-messages" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: var(--bg-app);"></div>
+
+    <div style="padding: 10px 15px; background: var(--card-bg); display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-app);">
+        <button onclick="document.getElementById('peer-chat-file-upload').click()" style="background: transparent; color: var(--primary); border: none; font-size: 26px; cursor: pointer; display: flex;" data-i18n="btn_attach_title">
+            <ion-icon name="attach-outline"></ion-icon>
+        </button>
+        <input type="file" id="peer-chat-file-upload" accept="image/*" style="display: none;" onchange="window.PeerChatSystem.uploadMedia(event)">
+        
+        <input type="text" id="peer-chat-input" data-i18n="chat_peer_placeholder" placeholder="اكتب لزميلك..." style="flex: 1; background: var(--input-bg); border: 1px solid var(--border-app); padding: 12px 15px; border-radius: 20px; color: var(--text-main); outline: none; font-family: 'Cairo';">
+        
+        <button onclick="window.PeerChatSystem.sendMessage()" style="background: var(--primary); border: none; width: 42px; height: 42px; border-radius: 50%; color: white; display: flex; justify-content: center; align-items: center; cursor: pointer;" data-i18n="btn_send_title">
+            <ion-icon name="send" style="transform: rotate(180deg); font-size: 20px; margin-left: -3px;"></ion-icon>
+        </button>
+    </div>
+</div>
+
+<div id="folder-slide" class="slide-page" style="z-index: 10005; background: var(--bg-app);">
+    <div class="slide-header">
+        <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.closeSPA('folder-slide')" data-i18n="btn_back_title"></ion-icon>
+        <h2 style="margin: 0; font-size: 18px; color: var(--text-main);" data-i18n="medical_folder_title">الملف الطبي 📁</h2>
+        <div style="width: 24px;"></div> </div>
+    
+    <div style="padding: 20px;">
+        <div id="cloud-files-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 15px;">
+            </div>
+    </div>
+</div><div id="patient-cloud-slide" class="slide-page" style="z-index: 10005; background: var(--bg-app);">
+    <div class="slide-header">
+        <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.closeSPA('patient-cloud-slide')" data-i18n="btn_back_title"></ion-icon>
+        <h2 style="margin: 0; font-size: 18px;" data-i18n="medical_cloud_title">الملف الطبي السحابي 📁</h2>
+        <div style="width: 24px;"></div>
+    </div>
+    
+    <div style="padding: 20px;">
+        <div id="cloud-upload-buttons" style="display: flex; gap: 10px; margin-bottom: 20px;">
+            </div>
+
+        <div id="cloud-files-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+        </div>
+    </div>
+</div>
+    
+    
+ 
+    <div id="toast-msg"></div>
+<div id="verificationSlidePage" class="slide-page" style="background: #050505; z-index: 10005;">
+    <div class="slide-header" style="background: #0a0a0a; border-bottom: 2px solid var(--primary);">
+        <button class="back-btn-circle" onclick="closeSPA('verificationSlidePage')"><ion-icon name="arrow-forward-outline"></ion-icon></button>
+        <div style="font-weight: 900; color: white;" data-i18n="verify_title">بوابة التوثيق الرسمية</div>
+        <div style="width: 40px;"></div>
+    </div>
+
+    <div style="padding: 25px; text-align: center;">
+        <div style="background: rgba(24, 119, 242, 0.1); padding: 20px; border-radius: 20px; border: 1px dashed var(--primary); margin-bottom: 25px;">
+            <ion-icon name="shield-half-outline" style="font-size: 60px; color: var(--primary);"></ion-icon>
+            <h2 style="color: white; margin: 10px 0;" data-i18n="verify_subtitle">أمان المرضى أولويتنا</h2>
+            <p style="color: #888; font-size: 13px;" data-i18n="verify_desc">للحصول على رتبة "طبيب موثق" والعلامة الزرقاء، يرجى تزويدنا بالوثائق الرسمية التي تثبت هويتك المهنية.</p>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <label class="v-upload-box">
+                <input type="file" hidden onchange="window.verificationEngine.handleFileUpload(event, 'certificate')" accept="image/*,application/pdf">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <ion-icon name="ribbon-outline" style="font-size: 30px;"></ion-icon>
+                    <div style="text-align: right;">
+                        <strong style="display: block;" data-i18n="verify_cert_title">شهادة ممارسة المهنة</strong>
+                        <small id="status-certificate" style="color: #666;" data-i18n="verify_no_file">لم يتم الاختيار</small>
+                    </div>
+                </div>
+            </label>
+
+            <label class="v-upload-box">
+                <input type="file" hidden onchange="window.verificationEngine.handleFileUpload(event, 'idCard')" accept="image/*">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <ion-icon name="id-card-outline" style="font-size: 30px;"></ion-icon>
+                    <div style="text-align: right;">
+                        <strong style="display: block;" data-i18n="verify_id_title">بطاقة التعريف الوطنية</strong>
+                        <small id="status-idCard" style="color: #666;" data-i18n="verify_id_desc">صورة الوجهين</small>
+                    </div>
+                </div>
+            </label>
+        </div>
+
+        <textarea id="v-extra-info" data-i18n="verify_notes_placeholder" placeholder="ملاحظات إضافية (رقم القيد، الجامعة...)" style="width: 100%; height: 100px; background: #111; border: 1px solid #333; border-radius: 15px; margin-top: 20px; padding: 15px; color: white; outline: none; font-family: 'Cairo';"></textarea>
+
+        <button id="v-submit-btn" onclick="window.verificationEngine.submitRequest()" style="width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 15px; margin-top: 30px; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 10px 20px rgba(24, 119, 242, 0.3);">
+            <span data-i18n="verify_submit_btn">إرسال طلب التوثيق</span>
+        </button>
+    </div>
+</div>
+
+<style>
+    .v-upload-box { background: #111; border: 1px solid #222; padding: 20px; border-radius: 18px; color: white; cursor: pointer; transition: 0.3s; }
+    .v-upload-box:active { transform: scale(0.98); background: #151515; }
+</style>
+
+
+<div id="mediaViewer" class="media-viewer-container" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:99999; flex-direction:column; touch-action:none; overscroll-behavior:none;">
+    
+    <div id="viewerHeader" class="viewer-ui viewer-header" style="position:absolute; top:0; left:0; width:100%; height:100px; display:flex; justify-content:space-between; align-items:flex-start; padding: 45px 20px 0 20px; z-index:10; background:linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); transition:0.3s ease;">
+        <button id="closeViewerBtn" class="viewer-btn-circle" onclick="window.closeMediaViewer()"><ion-icon name="close-outline"></ion-icon></button>
+        <div style="width:40px;"></div> <button id="viewerOptionsBtn" class="viewer-btn-circle"><ion-icon name="ellipsis-horizontal"></ion-icon></button>
+    </div>
+
+    <div id="viewerMainArea" class="viewer-img-container" style="flex:1; display:flex; justify-content:center; align-items:center; overflow:hidden; position:relative;">
+        <img id="viewerImage" src="" alt="Viewed Image" style="max-width:100%; max-height:100%; object-fit:contain; pointer-events:none; transition:transform 0s ease; transform-origin:center; transform:scale(1) translate(0px, 0px);">
+        <div id="viewerGestureDetector" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:5; background:transparent;"></div>
+    </div>
+
+    <div id="viewerFooter" class="viewer-ui viewer-footer" style="position:absolute; bottom:0; left:0; width:100%; background:linear-gradient(to top, rgba(0,0,0,0.8) 50%, transparent); color:white; padding:20px; transition:0.3s ease; z-index:10; display:flex; flex-direction:column; gap:15px; ">
+        
+        <div style="font-size:14px; font-weight:900;" onclick="window.closeMediaViewer(); window.showLikes(window.viewerCurrentPostId);">
+            <span style="font-size:16px;">👍</span> <span id="viewerLikesCount">---</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-around; align-items:center; padding:10px 0; border-top: 1px solid rgba(255,255,255,0.1); margin-top:5px;">
+            <button class="action-btn" id="viewerLikeBtn" style="background:none; border:none; color:white; font-size:16px; display:flex; align-items:center; gap:8px;">
+                <ion-icon name="heart-outline"></ion-icon> أعجبني
+            </button>
+            <button class="action-btn" onclick="window.closeMediaViewer(); window.openPostDetailsSlide(window.viewerCurrentPostId);" style="background:none; border:none; color:white; font-size:16px; display:flex; align-items:center; gap:8px;">
+                <ion-icon name="chatbubble-outline"></ion-icon> تعليق
+            </button>
+        </div>
+    </div>
+</div>
+<div id="pharma-radar-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(15px); z-index: 10000; justify-content: center; align-items: flex-end; padding-bottom: 20px;">
+    
+    <div style="background: linear-gradient(180deg, #121212 0%, #080808 100%); border: 1px solid rgba(183, 148, 244, 0.2); border-radius: 30px 30px 20px 20px; width: 95%; max-width: 450px; height: 80vh; display: flex; flex-direction: column; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); overflow: hidden; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+        
+        <div style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02);">
+            <div>
+                <h3 style="margin: 0; font-size: 18px; color: #b794f4; display: flex; align-items: center; gap: 10px;">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #ff4b2b; border-radius: 50%; box-shadow: 0 0 10px #ff4b2b; animation: pulse 1s infinite;"></span>
+                    <span data-i18n="radar_title">رادار الاستغاثة 📡</span>
+                </h3>
+                <p style="margin: 3px 0 0 0; font-size: 11px; color: #666;" data-i18n="radar_subtitle">طلبات الأدوية النشطة حالياً</p>
+            </div>
+            <button onclick="closePharmaRadar()" style="background: rgba(255,255,255,0.05); border: none; width: 35px; height: 35px; border-radius: 50%; color: #888; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+                <ion-icon name="close-outline" style="font-size: 24px;"></ion-icon>
+            </button>
+        </div>
+
+        <div id="radar-requests-list" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; scrollbar-width: none;">
+            </div>
+
+        <div style="padding: 10px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.3);">
+            <p style="font-size: 10px; color: #444; margin: 0;" data-i18n="radar_footer">نظام Healthmate للربط السريع</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes pulse { 0% { transform: scale(0.9); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.7; } }
+    #radar-requests-list::-webkit-scrollbar { display: none; }
+</style>
+
+<style>
+    @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+</style>
+<style>
+    .viewer-btn-circle { background: rgba(0,0,0,0.4); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 24px; transition:0.2s; }
+    .viewer-btn-circle:active { transform: scale(0.9); background: rgba(0,0,0,0.7); }
+    /* ستايل إخفاء الـ UI عند الزوم بالأصابع */
+    .media-viewer-container.zooming .viewer-ui { opacity: 0; pointer-events: none; }
+</style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    
+    <script src="js/languages.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/media-viewer.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/post-details.js"></script>
+    <script src="js/profile.js"></script><script src="js/chat-engine.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/feed-algorithm.js"></script><script src="js/verification.js"></script>
+    <script src="js/story-studio.js"></script> <script src="js/doctor-apps-engine.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+  <script>
+  // كود زر الرجوع الاحترافي المتوافق مع الموبايل
+document.addEventListener('deviceready', () => {
+    const App = window.Capacitor.Plugins.App;
+
+    App.addListener('backButton', () => {
+        // 0. التحقق من عارض الصور الفخم (نظام المنشورات)
+        const mediaViewer = document.getElementById('mediaViewer');
+        if (mediaViewer && mediaViewer.style.display !== 'none') {
+            window.closeMediaViewer(); 
+            return; 
+        }
+
+        // 1. 🚨 التصحيح هنا: استخدام الاسم الصحيح للـ ID الخاص بالستوري
+        const storyViewer = document.getElementById('storyViewer'); 
+        if (storyViewer && storyViewer.style.display !== 'none') {
+            window.closeStoryViewer(); 
+            return; 
+        }
+
+        // 2. إذا كان استوديو إنشاء القصص مفتوحاً
+        const storyStudio = document.getElementById('storyStudioPage');
+        if (storyStudio && storyStudio.style.display !== 'none') {
+            window.closeStoryStudio();
+            return;
+        }
+
+        // 3. نظام إغلاق النوافذ المتطور (SPA Slides)
+        const activeSlides = Array.from(document.querySelectorAll('.slide-page.active'));
+        if (activeSlides.length > 0) {
+            activeSlides.sort((a, b) => {
+                const zA = parseInt(window.getComputedStyle(a).zIndex) || 0;
+                const zB = parseInt(window.getComputedStyle(b).zIndex) || 0;
+                return zA - zB;
+            });
+            
+            const topSlide = activeSlides[activeSlides.length - 1]; 
+            if(typeof window.closeSPA === 'function') {
+                window.closeSPA(topSlide.id);
+            } else {
+                topSlide.classList.remove('active');
+            }
+            return; 
+        }
+
+        // 4. إذا كان مودال مفتوح (مثل قائمة المعجبين بالستوري)
+        const activeModal = document.querySelector('.modal.active') || document.querySelector('.modal[style*="display: flex"]');
+        if (activeModal) {
+            activeModal.style.display = 'none';
+            activeModal.classList.remove('active');
+            // إذا أغلقنا قائمة المعجبين، نرجع القصة تمشي
+            if(activeModal.id === 'usersListModal' && typeof window.resumeStoryTimer === 'function') {
+                window.resumeStoryTimer();
+            }
+            return;
+        }
+
+        // 5. إذا كان كل شيء مغلقاً، اخرج من التطبيق بسلام
+        App.exitApp();
+    });
+});
+// 1. فتح وإغلاق الرادار
+window.openPharmaRadar = function() {
+    document.getElementById('pharma-radar-modal').style.display = 'flex';
+    loadRadarRequests();
+};
+window.closePharmaRadar = function() {
+    document.getElementById('pharma-radar-modal').style.display = 'none';
+};
+
+// 1. فتح وإغلاق الرادار
+window.openPharmaRadar = function() {
+    document.getElementById('pharma-radar-modal').style.display = 'flex';
+    loadRadarRequests();
+};
+window.closePharmaRadar = function() {
+    document.getElementById('pharma-radar-modal').style.display = 'none';
+};
+
+// 2. التحقق من الهوية (للصيادلة فقط)
+firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+        firebase.firestore().collection('users').doc(user.uid).onSnapshot(doc => {
+            const radarIcon = document.getElementById('pharma-radar-icon');
+            if (doc.exists && doc.data().role === 'pharmacist') {
+                if(radarIcon) radarIcon.style.display = 'block';
+            }
+        });
+    }
+});
+function loadRadarRequests() {
+    const listDiv = document.getElementById('radar-requests-list');
+    const db = window.db || firebase.firestore();
+    
+    // 🌍 جلب القاموس الحالي
+    const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+
+    listDiv.innerHTML = `
+        <div style="text-align:center; padding:50px 20px;">
+            <ion-icon name="sync-outline" style="font-size:40px; color:#b794f4; animation: spin 2s linear infinite;"></ion-icon>
+            <p style="color:#666; font-size:13px; margin-top:10px;">${dict.radar_scanning || 'جاري مسح الترددات...'}</p>
+        </div>
+    `;
+
+    db.collection('medicine_requests')
+        .where('status', '==', 'searching')
+        .onSnapshot(snap => {
+            listDiv.innerHTML = '';
+            if (snap.empty) {
+                listDiv.innerHTML = `
+                    <div style="text-align:center; padding:60px 20px;">
+                        <ion-icon name="leaf-outline" style="font-size:50px; color:#333;"></ion-icon>
+                        <p style="color:#555; font-size:14px; margin-top:10px;">${dict.radar_empty_title || 'الهدوء يسيطر على الرادار..'}<br>${dict.radar_empty_desc || 'لا توجد طلبات حالياً.'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sortedDocs = snap.docs.sort((a, b) => (b.data().timestamp?.seconds || 0) - (a.data().timestamp?.seconds || 0));
+
+            sortedDocs.forEach(doc => {
+                const req = doc.data();
+                const reqId = doc.id;
+                
+                listDiv.innerHTML += `
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 20px; border-radius: 22px; position: relative; overflow: hidden; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                        <ion-icon name="medkit" style="position:absolute; right:-10px; bottom:-10px; font-size:80px; color:rgba(183,148,244,0.03); transform:rotate(-15deg);"></ion-icon>
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
+                            <div style="flex:1;">
+                                <span style="font-size:10px; color:#b794f4; text-transform:uppercase; font-weight:900; letter-spacing:1px; background:rgba(183,148,244,0.1); padding:3px 8px; border-radius:6px; margin-bottom:8px; display:inline-block;">${dict.radar_new_req || 'طلب جديد'}</span>
+                                <h4 style="margin:0; font-size:17px; color:#fff; font-weight:900;">${req.medName}</h4>
+                                <p style="margin:5px 0 0 0; font-size:12px; color:#888; display:flex; align-items:center; gap:5px;">
+                                    <ion-icon name="person-circle-outline"></ion-icon> ${req.patientName || dict.radar_unknown_patient || 'مريض غير مسجل'}
+                                </p>
+                            </div>
+                            <div style="text-align:right;">
+                                <span style="font-size:10px; color:#ff9f43; display:flex; align-items:center; gap:3px;">
+                                    <ion-icon name="location-outline"></ion-icon> ${req.wilaya || dict.radar_all_wilayas || 'عبر الوطن'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <button onclick="window.iHaveThisMed('${reqId}', '${req.medName?.replace(/'/g, "\\'")}')" 
+                                style="width:100%; background:#10b981; color:#000; border:none; padding:12px; border-radius:14px; font-family:'Cairo'; font-weight:900; font-size:13px; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:8px; box-shadow: 0 4px 15px rgba(16,185,129,0.2);">
+                            <ion-icon name="checkmark-circle" style="font-size:18px;"></ion-icon>
+                            ${dict.radar_btn_avail || 'متوفر في صيدليتي'}
+                        </button>
+                    </div>
+                `;
+            });
+        });
+}
+
+// ============================================================================
+window.iHaveThisMed = async function(reqId, medName) {
+    const user = firebase.auth().currentUser;
+    if(!user) return;
+    
+    // 🌍 جلب القاموس الحالي
+    const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+
+    const overlay = document.createElement('div');
+    overlay.id = "vip-confirm-overlay";
+    overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(15px); z-index:9999999; display:flex; justify-content:center; align-items:center; opacity:0; transition:0.3s;";
+
+    // دمج اسم الدواء داخل النص المترجم
+    const descText = (dict.vip_confirm_desc || 'هل أنت متأكد أن دواء <b style="color:#b794f4; font-size:16px;">({med})</b> متوفر لديك الآن؟<br>سيتم إرسال موقع صيدليتك للمريض فوراً للقدوم.').replace('{med}', medName);
+
+    overlay.innerHTML = `
+        <div style="background: linear-gradient(145deg, #1e1e2d, #0f0f19); border: 1px solid #b794f4; border-radius: 25px; padding: 30px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(183,148,244,0.3); transform: translateY(50px); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);" id="vip-confirm-box">
+            
+            <ion-icon name="checkmark-circle" style="font-size: 70px; color: #10b981; margin-bottom: 15px; filter: drop-shadow(0 0 15px rgba(16,185,129,0.5));"></ion-icon>
+            
+            <h3 style="color: white; margin: 0 0 10px 0; font-family: 'Cairo'; font-size: 20px;">${dict.vip_confirm_title || 'تأكيد توفر الدواء 💊'}</h3>
+            <p style="color: #aaa; font-size: 14px; margin-bottom: 25px; line-height: 1.6;">${descText}</p>
+            
+            <div style="display: flex; gap: 15px;">
+                <button id="btn-vip-yes" style="flex: 2; background: #10b981; color: black; border: none; padding: 12px; border-radius: 15px; font-family: 'Cairo'; font-weight: bold; cursor: pointer; font-size: 15px; display:flex; justify-content:center; align-items:center; gap:5px;">
+                    <ion-icon name="send"></ion-icon> ${dict.vip_btn_yes || 'نعم، متوفر'}
+                </button>
+                <button id="btn-vip-no" style="flex: 1; background: transparent; color: #ff4b2b; border: 1px solid #ff4b2b; padding: 12px; border-radius: 15px; font-family: 'Cairo'; font-weight: bold; cursor: pointer;">${dict.vip_btn_no || 'إلغاء'}</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    setTimeout(() => {
+        overlay.style.opacity = "1";
+        document.getElementById('vip-confirm-box').style.transform = "translateY(0)";
+    }, 10);
+
+    document.getElementById('btn-vip-no').onclick = () => {
+        overlay.style.opacity = "0";
+        setTimeout(() => overlay.remove(), 300);
+    };
+
+    document.getElementById('btn-vip-yes').onclick = async () => {
+        const btn = document.getElementById('btn-vip-yes');
+        btn.innerHTML = `<ion-icon name="sync" style="animation: spin 1s linear infinite;"></ion-icon> ${dict.vip_sending || 'جاري الإرسال...'}`;
+        btn.style.opacity = "0.8";
+
+        try {
+            const db = window.db || firebase.firestore();
+            const doc = await db.collection('users').doc(user.uid).get();
+            const pData = doc.exists ? doc.data() : {};
+            
+            const lat = pData.latitude || 0;
+            const lng = pData.longitude || 0;
+
+            await db.collection('medicine_requests').doc(reqId).update({
+                status: 'found',
+                foundAtInfo: `${dict.vip_pharma_prefix || 'صيدلية'} ${pData.name || dict.vip_unknown_pharma || "غير معروفة"}`,
+                foundLat: lat,
+                foundLng: lng,
+                foundBy: user.uid
+            });
+
+            document.getElementById('vip-confirm-box').innerHTML = `
+                <ion-icon name="rocket" style="font-size: 80px; color: #b794f4; animation: bounce 1s infinite;"></ion-icon>
+                <h2 style="color: white; margin-top: 20px; font-family: 'Cairo';">${dict.vip_success_title || 'تم إرسال الإشعار! 🚀'}</h2>
+                <p style="color: #10b981; font-size: 14px;">${dict.vip_success_desc || 'المريض في طريقه إليك الآن.'}</p>
+            `;
+
+            setTimeout(() => {
+                overlay.style.opacity = "0";
+                setTimeout(() => overlay.remove(), 300);
+            }, 2500);
+
+        } catch(error) {
+            console.error(error);
+            btn.innerHTML = `${dict.vip_error || 'حدث خطأ ❌'}`;
+            btn.style.background = "#ff4b2b";
+            btn.style.color = "white";
+        }
+    };
+};
+
+
+// ============================================================================
+// ✅ دالة تأكيد توفر الدواء (تصميم VIP الملكي للصيدلي + دعم اللغات والخريطة)
+// ============================================================================
+window.confirmMedAvailability = async function(requestId, medName) {
+    const user = firebase.auth().currentUser;
+    if(!user) return;
+    
+    // 🌍 جلب القاموس الحالي
+    const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+
+    // 1. بناء نافذة التأكيد الزجاجية (وداعاً لتنبيه المتصفح البشع)
+    const overlay = document.createElement('div');
+    overlay.id = "vip-confirm-overlay";
+    overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(15px); z-index:9999999; display:flex; justify-content:center; align-items:center; opacity:0; transition:0.3s;";
+
+    // دمج اسم الدواء داخل النص المترجم
+    const descText = (dict.vip_confirm_desc || 'هل أنت متأكد أن دواء <b style="color:#b794f4; font-size:16px;">({med})</b> متوفر لديك الآن؟<br>سيتم إرسال موقع صيدليتك للمريض فوراً للقدوم.').replace('{med}', medName);
+
+    overlay.innerHTML = `
+        <div style="background: linear-gradient(145deg, #1e1e2d, #0f0f19); border: 1px solid #b794f4; border-radius: 25px; padding: 30px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(183,148,244,0.3); transform: translateY(50px); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);" id="vip-confirm-box">
+            
+            <ion-icon name="checkmark-circle" style="font-size: 70px; color: #10b981; margin-bottom: 15px; filter: drop-shadow(0 0 15px rgba(16,185,129,0.5));"></ion-icon>
+            
+            <h3 style="color: white; margin: 0 0 10px 0; font-family: 'Cairo'; font-size: 20px;">${dict.vip_confirm_title || 'تأكيد توفر الدواء 💊'}</h3>
+            <p style="color: #aaa; font-size: 14px; margin-bottom: 25px; line-height: 1.6;">${descText}</p>
+            
+            <div style="display: flex; gap: 15px;">
+                <button id="btn-vip-yes" style="flex: 2; background: #10b981; color: black; border: none; padding: 12px; border-radius: 15px; font-family: 'Cairo'; font-weight: bold; cursor: pointer; font-size: 15px; display:flex; justify-content:center; align-items:center; gap:5px;">
+                    <ion-icon name="send"></ion-icon> ${dict.vip_btn_yes || 'نعم، متوفر'}
+                </button>
+                <button id="btn-vip-no" style="flex: 1; background: transparent; color: #ff4b2b; border: 1px solid #ff4b2b; padding: 12px; border-radius: 15px; font-family: 'Cairo'; font-weight: bold; cursor: pointer;">${dict.vip_btn_no || 'إلغاء'}</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // أنيميشن الدخول
+    setTimeout(() => {
+        overlay.style.opacity = "1";
+        document.getElementById('vip-confirm-box').style.transform = "translateY(0)";
+    }, 10);
+
+    // برمجة زر الإلغاء
+    document.getElementById('btn-vip-no').onclick = () => {
+        overlay.style.opacity = "0";
+        setTimeout(() => overlay.remove(), 300);
+    };
+
+    // برمجة الإرسال للفايربيس
+    document.getElementById('btn-vip-yes').onclick = async () => {
+        const btn = document.getElementById('btn-vip-yes');
+        btn.innerHTML = `<ion-icon name="sync" style="animation: spin 1s linear infinite;"></ion-icon> ${dict.vip_sending || 'جاري الإرسال...'}`;
+        btn.style.opacity = "0.8";
+
+        try {
+            const db = window.db || firebase.firestore();
+            const pharmaDoc = await db.collection('users').doc(user.uid).get();
+            const pharmaData = pharmaDoc.exists ? pharmaDoc.data() : {};
+            
+            const lat = pharmaData.latitude || 0;
+            const lng = pharmaData.longitude || 0;
+
+            // 🚨 صلحنا اسم المجموعة إلى medicine_requests وضفنا الإحداثيات
+            await db.collection('medicine_requests').doc(requestId).update({
+                status: 'found',
+                foundBy: user.uid,
+                foundAtInfo: `${dict.vip_pharma_prefix || 'صيدلية'} ${pharmaData.name || dict.vip_unknown_pharma || "غير معروفة"}`,
+                foundLat: lat,
+                foundLng: lng,
+                foundAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // رسالة النجاح الصاروخية 🚀
+            document.getElementById('vip-confirm-box').innerHTML = `
+                <ion-icon name="rocket" style="font-size: 80px; color: #b794f4; animation: bounce 1s infinite;"></ion-icon>
+                <h2 style="color: white; margin-top: 20px; font-family: 'Cairo';">${dict.vip_success_title || 'تم إرسال الإشعار! 🚀'}</h2>
+                <p style="color: #10b981; font-size: 14px;">${dict.vip_success_desc || 'المريض في طريقه إليك الآن.'}</p>
+            `;
+
+            setTimeout(() => {
+                overlay.style.opacity = "0";
+                setTimeout(() => overlay.remove(), 300);
+            }, 2500);
+
+        } catch(error) {
+            console.error(error);
+            btn.innerHTML = `${dict.vip_error || 'فشل الإرسال ❌'}`;
+            btn.style.background = "#ff4b2b";
+            btn.style.color = "white";
+        }
+    };
+};
+</script>
+</body>
+</html>

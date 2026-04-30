@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Healthmate | Daily Routine</title>
+    <link rel="stylesheet" href="../css/patient_dash.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+    <style>
+        
+        :root {
+            --gold-glow: #f6e58d;
+            --water-blue: #00d2ff;
+            --step-orange: #ff9f43;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 0%, #1a1a2e 0%, #050505 80%);
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        .routine-header {
+            padding: calc(env(safe-area-inset-top, 40px) + 15px) 20px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .routine-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* كروت الأداء الزجاجية */
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 28px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stat-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 18px;
+        }
+
+        /* متعقب الماء */
+        .water-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .water-drop {
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .water-drop.active {
+            background: var(--water-blue);
+            color: white;
+            box-shadow: 0 0 15px var(--water-blue);
+        }
+
+        /* قائمة الأدوية */
+        .med-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(0,0,0,0.2);
+            padding: 12px;
+            border-radius: 18px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .med-info { flex: 1; }
+        .med-info h4 { margin: 0; font-size: 15px; }
+        .med-info p { margin: 0; font-size: 12px; color: var(--text-sub); }
+
+        .take-btn {
+            background: var(--gold);
+            color: #000;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* العدادات الرياضية */
+        .activity-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 8px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .activity-val { font-size: 24px; font-weight: 900; color: var(--step-orange); }
+        .activity-unit { font-size: 10px; color: var(--text-sub); }
+
+        .back-btn-circle {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: white; font-size: 22px;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="routine-header">
+        <div class="back-btn-circle" onclick="window.history.back()">
+            <ion-icon name="arrow-forward-outline"></ion-icon>
+        </div>
+        <div style="flex: 1;">
+            <h2 style="margin: 0; font-size: 18px; font-weight: 900;" data-i18n="dash_routine">روتيني اليومي</h2>
+            <p style="margin: 0; font-size: 12px; color: var(--gold);" id="today-date"></p>
+        </div>
+    </header>
+
+    <div class="routine-container">
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-title" style="color: var(--water-blue);">
+                    <ion-icon name="water"></ion-icon>
+                    <span data-i18n="water_tracker_title">ترطيب الجسم</span>
+                </div>
+                <span id="water-status" style="font-weight: 900; color: var(--water-blue);">0/8</span>
+            </div>
+            <div class="water-grid" id="water-drops-container">
+                </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-title" style="color: var(--gold);">
+                    <ion-icon name="medkit"></ion-icon>
+                    <span data-i18n="meds_bag_title">الأدوية القادمة</span>
+                </div>
+                <ion-icon name="add-circle" style="font-size: 24px; cursor: pointer;" onclick="goToPage('offline_dash.html')"></ion-icon>
+            </div>
+            <div id="routine-meds-list">
+                </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-title" style="color: var(--step-orange);">
+                    <ion-icon name="flame"></ion-icon>
+                    <span data-i18n="activity_tracker_title">النشاط والحركة</span>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-around;">
+                <div class="activity-circle" style="border-top-color: var(--step-orange);">
+                    <span class="activity-val" id="routine-steps">0</span>
+                    <span class="activity-unit" data-i18n="steps_input_ph">خطوة</span>
+                </div>
+                <div style="text-align: center;">
+                    <p style="margin: 0; font-size: 12px; color: var(--text-sub);" data-i18n="calories_unit">السعرات المحروقة</p>
+                    <h3 style="margin: 5px 0; color: white;" id="routine-cals">0</h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+<script src="../js/languages.js"></script>
+    <script>
+        // محرك الروتين اليومي
+        const RoutineEngine = {
+            init: function() {
+                this.updateDate();
+                this.loadWater();
+                this.loadMeds();
+                this.loadActivity();
+            },
+
+            updateDate: function() {
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('today-date').innerText = new Date().toLocaleDateString('ar-EG', options);
+            },
+
+            loadWater: function() {
+                const container = document.getElementById('water-drops-container');
+                let count = parseInt(localStorage.getItem('offline_water') || '0');
+                document.getElementById('water-status').innerText = `${count}/8`;
+                
+                container.innerHTML = '';
+                for (let i = 1; i <= 8; i++) {
+                    const drop = document.createElement('div');
+                    drop.className = `water-drop ${i <= count ? 'active' : ''}`;
+                    drop.innerHTML = '<ion-icon name="water"></ion-icon>';
+                    drop.onclick = () => this.toggleWater(i);
+                    container.appendChild(drop);
+                }
+            },
+
+            toggleWater: function(index) {
+                localStorage.setItem('offline_water', index.toString());
+                this.loadWater();
+                if(window.navigator.vibrate) window.navigator.vibrate(50);
+            },
+
+            loadMeds: function() {
+                const list = document.getElementById('routine-meds-list');
+                const meds = JSON.parse(localStorage.getItem('offline_meds') || '[]');
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                
+                if(meds.length === 0) {
+                    list.innerHTML = `<p style="text-align:center; font-size:12px; color:#555; padding:10px;">${dict.routine_no_meds || 'لا توجد أدوية مسجلة. اضغط + للإضافة'}</p>`;
+                    return;
+                }
+
+                list.innerHTML = meds.map((m, i) => `
+                    <div class="med-item">
+                        <div class="med-info">
+                            <h4>${m.name}</h4>
+                            <p>${m.mealText || dict.routine_no_meal_set || 'نظام وجبات غير محدد'}</p>
+                        </div>
+                        <button class="take-btn" onclick="RoutineEngine.takeMed(${i})">${dict.btn_take_dose || 'أخذ الجرعة'}</button>
+                    </div>
+                `).join('');
+            },
+
+            takeMed: function(index) {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                let meds = JSON.parse(localStorage.getItem('offline_meds') || '[]');
+                if(meds[index].totalPills > 0) {
+                    meds[index].totalPills -= 1;
+                    localStorage.setItem('offline_meds', JSON.stringify(meds));
+                    alert(dict.dose_recorded_msg || 'تم تسجيل الجرعة. بالشفاء العاجل! 🤲');
+                    this.loadMeds();
+                } else {
+                    alert(dict.med_out_of_stock_msg || 'هذا الدواء قد نفد! يرجى إعادة الشراء.');
+                }
+            },
+
+            loadActivity: function() {
+                document.getElementById('routine-steps').innerText = localStorage.getItem('offline_steps') || '0';
+                document.getElementById('routine-cals').innerText = localStorage.getItem('offline_cals') || '0';
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => RoutineEngine.init());
+        
+        // الانتقال السلس
+        window.goToPage = function(url) {
+            window.location.href = url;
+        };
+    </script>
+</body>
+</html>

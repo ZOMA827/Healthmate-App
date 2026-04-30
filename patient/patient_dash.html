@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Healthmate | Patient Dashboard</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link rel="stylesheet" href="../css/patient_dash.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+</head>
+<body>
+<div id="top-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; background: var(--blue, #00f3ff); width: 0%; z-index: 999999; transition: width 0.3s ease; display: none; box-shadow: 0 0 10px var(--blue, #00f3ff);"></div>
+<header class="patient-header">
+    
+    <div class="user-info">
+        <p id="greeting-text" data-i18n="dash_greeting">مرحباً بك،</p>
+        <h1 id="patient-name">...</h1>
+    </div>
+
+    <div class="header-actions">
+        
+        <div class="action-item" onclick="window.goToPage('offline_dash.html')" style="background: rgba(183, 148, 244, 0.1); border: 1px solid rgba(183, 148, 244, 0.2);">
+            <ion-icon name="cloud-offline-outline" style="color: #b794f4;"></ion-icon>
+            <span style="position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; background: #b794f4; border-radius: 50%; box-shadow: 0 0 10px #b794f4;"></span>
+        </div>
+
+        <div class="action-item" onclick="window.goToPage('appointments.html')">
+            <ion-icon name="calendar-clear-outline"></ion-icon>
+            <span id="app-notif-dot" style="display:none;"></span>
+        </div>
+
+        <div class="action-item" onclick="window.toggleSettings()">
+            <ion-icon name="grid-outline"></ion-icon>
+        </div>
+
+    </div>
+
+</header>
+
+  <div class="bento-grid">
+        
+        <div class="bento-card span-2" onclick="window.goToPage('find_doctors.html')" style="--card-color: var(--green);">
+            <div class="bento-text">
+                <h3 data-i18n="dash_find_doctor">البحث عن طبيب</h3>
+                <p data-i18n="dash_find_doctor_desc">احجز موعداً مع أفضل الأطباء والمختصين بسهولة</p>
+            </div>
+            <div class="bento-icon"><ion-icon name="search"></ion-icon></div>
+            <div class="bento-glow"></div>
+        </div>
+        <div class="bento-card span-2" onclick="goToPage('../patient_community.html')" style="--card-color: var(--blue);">
+            <div class="bento-text">
+                <h3 data-i18n="nav_community">المجتمع الطبي</h3>
+                <p data-i18n="dash_community_desc">تواصل مع المرضى والأطباء وشارك تجاربك الصحية</p>
+            </div>
+            <div class="bento-icon"><ion-icon name="people-circle-outline"></ion-icon></div>
+            <div class="bento-glow"></div>
+        </div>
+        <div class="bento-card" onclick="window.goToPage('appointments.html')" style="--card-color: var(--blue);">
+            <div class="bento-icon"><ion-icon name="calendar"></ion-icon></div>
+            <h3 data-i18n="dash_appointments">مواعيدي</h3>
+            <p data-i18n="dash_app_desc">إدارة حجوزاتك ومواعيدك</p>
+            <div class="bento-glow"></div>
+        </div>
+
+        <div class="bento-card" onclick="goToPage('patient_inbox.html')" style="--card-color: var(--teal);">
+            <div class="bento-icon"><ion-icon name="chatbubbles"></ion-icon></div>
+            <h3 data-i18n="dash_consult">الاستشارات</h3>
+            <p data-i18n="dash_consult_desc">رسائلك الطبية السابقة</p>
+            <div class="bento-glow"></div>
+        </div>
+
+        <div class="bento-card" onclick="goToPage('ai_assistant.html')" style="--card-color: var(--purple);">
+            <div class="bento-icon"><ion-icon name="color-wand"></ion-icon></div>
+            <h3 data-i18n="dash_ai">المساعد الذكي</h3>
+            <p data-i18n="dash_ai_desc">تحليل الأعراض بالذكاء الاصطناعي</p>
+            <div class="bento-glow"></div>
+        </div>
+
+        <div class="bento-card" onclick="window.goToPage('pharmacy_duty.html')" style="--card-color: var(--orange);">
+            <div class="bento-icon"><ion-icon name="medical"></ion-icon></div>
+            <h3 data-i18n="dash_pharmacy">الصيدلية</h3>
+            <p data-i18n="dash_pharm_desc">طلب وتتبع أدويتك</p>
+            <div class="bento-glow"></div>
+        </div>
+        <div class="bento-card" onclick="window.goToPage('cloud_folder.html')" style="--card-color: var(--gold);">
+    <div class="bento-icon"><ion-icon name="folder-open"></ion-icon></div>
+    <h3 data-i18n="card_folder">ملفي السحابي</h3>
+    <p data-i18n="card_folder_desc" style="font-size: 11px;">خزن وشارك تقاريرك الطبية بأمان</p>
+    <div class="bento-glow"></div>
+</div>
+
+<div class="bento-card" onclick="window.goToPage('health_radar.html')" style="--card-color: var(--teal);">
+    <div class="bento-icon"><ion-icon name="map"></ion-icon></div>
+    <h3 data-i18n="card_radar">رادار الصحة</h3>
+    <p data-i18n="card_radar_desc" style="font-size: 11px;">ابحث عن الأطباء والصيدليات القريبة</p>
+    <div class="bento-glow"></div>
+</div>
+
+        <div class="bento-card span-2" onclick="goToPage('blood_rescue.html')" style="--card-color: var(--red);">
+            <div class="bento-text">
+                <h3 data-i18n="dash_blood">شبكة إنقاذ الحياة</h3>
+                <p data-i18n="dash_blood_desc">نداءات التبرع بالدم العاجلة في منطقتك</p>
+            </div>
+            <div class="bento-icon"><ion-icon name="water"></ion-icon></div>
+            <div class="bento-glow"></div>
+        </div>
+
+        <div class="bento-card span-2" onclick="goToPage('routine.html')" style="--card-color: var(--gold);">
+            <div class="bento-text">
+                <h3 data-i18n="dash_routine">روتيني اليومي</h3>
+                <p data-i18n="dash_routine_desc">تتبع مواعيد الأدوية، شرب الماء، والنشاط الرياضي</p>
+            </div>
+            <div class="bento-icon"><ion-icon name="fitness"></ion-icon></div>
+            <div class="bento-glow"></div>
+        </div>
+
+    </div>
+  
+
+    </main>
+  
+
+  
+   
+    
+            
+          
+    
+     <div id="settings-modal" class="glass-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(15px); z-index: 100000; justify-content: center; align-items: center;" onclick="if(event.target === this) window.toggleSettings()">
+        
+       <div class="royal-modal" style="background: #111; border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; width: 85%; max-width: 350px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 data-i18n="settings_title" style="color: var(--blue); margin: 0; font-size: 20px;">الإعدادات ⚙️</h3>
+        <ion-icon name="close-circle" style="font-size: 28px; color: #555; cursor: pointer;" onclick="window.toggleSettings()"></ion-icon>
+    </div>
+    
+   
+    
+    <div class="settings-item" onclick="window.toggleTheme()">
+        <ion-icon name="moon" style="color: var(--purple);"></ion-icon>
+        <span data-i18n="settings_theme">تغيير المظهر (مظلم/مضيء) 🌓</span>
+    </div>
+
+    <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 15px; padding: 15px; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <ion-icon name="location-outline" style="font-size: 24px; color: var(--blue);"></ion-icon>
+            <span data-i18n="settings_wilaya" style="font-weight: bold; color: white;">ولايتي الحالية</span>
+        </div>
+        <select id="user-wilaya-select" onchange="window.savePatientWilaya(this.value)" style="width: 100%; padding: 10px; border-radius: 10px; background: #222; color: white; border: 1px solid #444; font-family: 'Cairo'; outline: none;">
+            <option value="" data-i18n="select_wilaya">اختر ولايتك...</option>
+            <option value="Adrar">01 - Adrar</option>
+            <option value="Chlef">02 - Chlef</option>
+            <option value="Laghouat">03 - Laghouat</option>
+            <option value="Oum El Bouaghi">04 - Oum El Bouaghi</option>
+            <option value="Batna">05 - Batna</option>
+            <option value="Béjaïa">06 - Béjaïa</option>
+            <option value="Biskra">07 - Biskra</option>
+            <option value="Béchar">08 - Béchar</option>
+            <option value="Blida">09 - Blida</option>
+            <option value="Bouira">10 - Bouira</option>
+            <option value="Tamanrasset">11 - Tamanrasset</option>
+            <option value="Tébessa">12 - Tébessa</option>
+            <option value="Tlemcen">13 - Tlemcen</option>
+            <option value="Tiaret">14 - Tiaret</option>
+            <option value="Tizi Ouzou">15 - Tizi Ouzou</option>
+            <option value="Alger">16 - Alger</option>
+            <option value="Djelfa">17 - Djelfa</option>
+            <option value="Jijel">18 - Jijel</option>
+            <option value="Sétif">19 - Sétif</option>
+            <option value="Saïda">20 - Saïda</option>
+            <option value="Skikda">21 - Skikda</option>
+            <option value="Sidi Bel Abbès">22 - Sidi Bel Abbès</option>
+            <option value="Annaba">23 - Annaba</option>
+            <option value="Guelma">24 - Guelma</option>
+            <option value="Constantine">25 - Constantine</option>
+            <option value="Médéa">26 - Médéa</option>
+            <option value="Mostaganem">27 - Mostaganem</option>
+            <option value="M'Sila">28 - M'Sila</option>
+            <option value="Mascara">29 - Mascara</option>
+            <option value="Ouargla">30 - Ouargla</option>
+            <option value="Oran">31 - Oran</option>
+            <option value="El Bayadh">32 - El Bayadh</option>
+            <option value="Illizi">33 - Illizi</option>
+            <option value="Bordj Bou Arreridj">34 - Bordj Bou Arreridj</option>
+            <option value="Boumerdès">35 - Boumerdès</option>
+            <option value="El Tarf">36 - El Tarf</option>
+            <option value="Tindouf">37 - Tindouf</option>
+            <option value="Tissemsilt">38 - Tissemsilt</option>
+            <option value="El Oued">39 - El Oued</option>
+            <option value="Khenchela">40 - Khenchela</option>
+            <option value="Souk Ahras">41 - Souk Ahras</option>
+            <option value="Tipaza">42 - Tipaza</option>
+            <option value="Mila">43 - Mila</option>
+            <option value="Aïn Defla">44 - Aïn Defla</option>
+            <option value="Naâma">45 - Naâma</option>
+            <option value="Aïn Témouchent">46 - Aïn Témouchent</option>
+            <option value="Ghardaïa">47 - Ghardaïa</option>
+            <option value="Relizane">48 - Relizane</option>
+        </select>
+    </div>
+    
+    <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 15px; padding: 15px; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <ion-icon name="language" style="font-size: 24px; color: var(--orange);"></ion-icon>
+            <span data-i18n="settings_language" style="font-weight: bold; color: white;">لغة التطبيق</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button class="lang-mini-btn" onclick="window.setAppLang('ar')" data-i18n="lang_ar_btn">عربي</button>
+            <button class="lang-mini-btn" onclick="window.setAppLang('en')" data-i18n="lang_en_btn">English</button>
+            <button class="lang-mini-btn" onclick="window.setAppLang('fr')" data-i18n="lang_fr_btn">Français</button>
+        </div>
+    </div>
+
+    <div class="settings-item" style="border-color: rgba(255,0,0,0.3);" onclick="window.patientLogout()">
+        <ion-icon name="log-out" style="color: var(--red);"></ion-icon>
+        <span data-i18n="settings_logout" style="color: var(--red);">تسجيل الخروج</span>
+    </div>
+</div>
+   
+
+
+   
+
+  
+   
+  
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script src="../js/languages.js"></script>
+<script src="patient_dash.js"></script>
+<script src="appointments-engine.js"></script>
+    
+
+<script>// كود زر الرجوع الاحترافي المتوافق مع الموبايل
+document.addEventListener('deviceready', () => {
+    const App = window.Capacitor.Plugins.App;
+
+    App.addListener('backButton', () => {
+        // البحث عن أي صفحة منزلقة مفتوحة (تأكد أن الصفحات المفتوحة تأخذ كلاس active)
+        const activeSlide = document.querySelector('.slide-page.active');
+        
+        // البحث عن المودالات المفتوحة (مثل مودال المنشورات أو الدعم)
+        const activeModal = document.querySelector('.modal[style*="display: flex"]') || 
+                           document.querySelector('.modal[style*="display: block"]');
+
+        if (activeSlide) {
+            // إغلاق الصفحة المنزلقة بدلاً من الخروج من التطبيق
+            if (typeof window.closeSPA === 'function') {
+                window.closeSPA(activeSlide.id);
+            } else {
+                activeSlide.classList.remove('active');
+            }
+        } else if (activeModal) {
+            // إغلاق المودال إذا كان مفتوحاً
+            activeModal.style.display = 'none';
+        } else {
+            // إذا لم يكن هناك شيء مفتوح، يخرج من التطبيق
+            App.exitApp();
+        }
+    });
+});</script>
+</body>
+</html>

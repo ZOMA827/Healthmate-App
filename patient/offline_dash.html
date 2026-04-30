@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Healthmate | Offline Mode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <style>
+
+        /* =========================================
+           📱 دعم الهواتف الذكية (Responsive Mobile)
+           ========================================= */
+        @media (max-width: 768px) {
+            .health-grid {
+                grid-template-columns: 1fr !important; /* بطاقة واحدة في السطر لتفادي الانحشار */
+                gap: 15px;
+            }
+            .tool-card {
+                padding: 15px;
+            }
+            .tool-card h4 {
+                font-size: 14px;
+            }
+            .section-title {
+                font-size: 16px;
+            }
+            /* تصغير أيقونات وبطاقات النشاط */
+            #steps-circle {
+                width: 80px !important; height: 80px !important;
+            }
+            #steps-circle > div {
+                width: 65px !important; height: 65px !important;
+            }
+            #steps-count { font-size: 15px !important; }
+            
+            .water-glass {
+                width: 90px; height: 90px; margin: 15px auto;
+            }
+            .water-text { font-size: 20px; }
+            
+            .hm-input, .hm-btn {
+                font-size: 12px; padding: 10px;
+            }
+            /* تصغير النوافذ المنبثقة (المودال) */
+            .modal-box {
+                width: 95%; padding: 20px; border-radius: 20px;
+            }
+        }
+        /* ==========================================
+           🎨 الأساسيات والتصميم الجذري (Glassmorphism)
+           ========================================== */
+        :root {
+            --bg-dark: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --red-glow: #ff4b2b;
+            --blue-glow: #00d2ff;
+            --green-glow: #10b981;
+            --purple-glow: #b794f4;
+            --text-main: #ffffff;
+            --text-sub: #aaaaaa;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background: radial-gradient(circle at 50% 0%, #1a1a2e 0%, var(--bg-dark) 80%);
+            color: var(--text-main);
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 50px;
+        }
+
+        /* الهيدر الملكي المتوهج */
+        .offline-header {
+            padding: calc(env(safe-area-inset-top, 40px) + 20px) 20px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky; top: 0; z-index: 1000;
+        }
+
+        .offline-status {
+            color: var(--text-main);
+            font-size: 18px; font-weight: 900;
+            display: flex; align-items: center; gap: 10px;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+            animation: textPulse 2s infinite;
+        }
+        @keyframes textPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        .back-btn { font-size: 28px; cursor: pointer; color: var(--text-main); transition: 0.2s; }
+        .back-btn:active { transform: scale(0.8); }
+
+        /* حاويات الأقسام (الكروت الزجاجية) */
+        .section-container {
+            margin: 20px;
+            border-radius: 24px;
+            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* 🚨 منطقة الطوارئ القصوى 🚨 */
+        .emergency-zone {
+            background: linear-gradient(145deg, rgba(255, 75, 43, 0.1), rgba(0,0,0,0));
+            border-color: rgba(255, 75, 43, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .emergency-zone::before {
+            content: ''; position: absolute; top: -50px; right: -50px; width: 100px; height: 100px;
+            background: var(--red-glow); filter: blur(60px); opacity: 0.5;
+        }
+
+        .section-title {
+            font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; margin-top: 0;
+        }
+
+        /* شبكة أزرار الإسعافات */
+        .sos-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
+        .sos-btn {
+            background: rgba(255, 75, 43, 0.15); border: 1px solid rgba(255, 75, 43, 0.4);
+            color: white; padding: 15px; border-radius: 16px; display: flex; flex-direction: column;
+            align-items: center; gap: 8px; font-family: 'Cairo'; font-weight: bold; cursor: pointer;
+            transition: 0.3s;
+        }
+        .sos-btn:active { transform: scale(0.95); background: var(--red-glow); }
+        .sos-btn ion-icon { font-size: 32px; color: var(--red-glow); }
+        .sos-btn:active ion-icon { color: white; }
+
+        /* شبكة أدوات الصحة */
+        .health-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 15px; }
+        .tool-card {
+            background: rgba(0, 0, 0, 0.4); border: 1px solid var(--glass-border);
+            border-radius: 16px; padding: 15px;
+        }
+
+        /* الحقول والأزرار العامة */
+        .hm-input {
+            width: 100%; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border);
+            padding: 12px; border-radius: 12px; outline: none; font-family: inherit; margin-bottom: 10px; box-sizing: border-box;
+        }
+        .hm-btn {
+            width: 100%; background: var(--blue-glow); color: #000; border: none; padding: 12px;
+            border-radius: 12px; font-weight: 900; font-family: inherit; font-size: 15px; cursor: pointer; transition: 0.2s;
+        }
+        .hm-btn:active { transform: scale(0.95); }
+
+        /* القوائم (الأدوية، القياسات، جهات الاتصال) */
+        .data-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; max-height: 250px; overflow-y: auto; }
+        .data-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.03); padding: 12px 15px; border-radius: 12px; border: 1px solid var(--glass-border);
+        }
+        .data-item-info h4 { margin: 0 0 5px 0; color: white; font-size: 15px; }
+        .data-item-info p { margin: 0; color: var(--text-sub); font-size: 12px; }
+        .delete-icon { color: var(--red-glow); font-size: 22px; cursor: pointer; padding: 5px; }
+
+        /* متعقب الماء الدائري */
+        .water-tracker { display: flex; align-items: center; justify-content: space-between; }
+        .water-glass {
+            width: 60px; height: 80px; border: 3px solid var(--blue-glow); border-radius: 5px 5px 20px 20px;
+            position: relative; overflow: hidden; display: flex; align-items: flex-end; justify-content: center;
+        }
+        .water-fill { width: 100%; background: var(--blue-glow); transition: height 0.5s ease; position: absolute; bottom: 0; }
+        .water-text { position: relative; z-index: 10; color: white; font-weight: bold; font-size: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); margin-bottom: 10px;}
+
+        /* النوافذ المنبثقة (Modals) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            display: none; justify-content: center; align-items: center; z-index: 99999; opacity: 0; transition: 0.3s;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-box {
+            background: #111; border: 1px solid var(--glass-border); padding: 25px;
+            border-radius: 25px; width: 85%; max-width: 350px; transform: scale(0.8); transition: 0.3s;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+
+        /* التنبيهات */
+        #royal-toast {
+            position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+            background: var(--text-main); color: #000; padding: 12px 25px; border-radius: 25px; font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 999999; transition: 0.4s; display: flex; align-items: center; gap: 8px;
+        }
+        /* ستايل أزرار أوقات الأدوية */
+        .slot-btn {
+            flex: 1; padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border); color: var(--text-sub);
+            font-family: 'Cairo'; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        .slot-btn.active { background: var(--purple-glow); color: white; border-color: var(--purple-glow); }
+        .time-row { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; border: 1px solid var(--glass-border); }
+    /* إصلاح قائمة زمر الدم (الظهور الواضح) */
+        #mid-blood {
+            background-color: #1a1a1a !important;
+            color: white !important;
+            appearance: listbox !important;
+        }
+        #mid-blood option {
+            background-color: #1a1a1a;
+            color: white;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+   <header class="offline-header">
+        <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.history.back()"></ion-icon>
+        
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <div class="offline-status">
+                <span data-i18n="offline_mode_title">وضع الأوفلاين</span> <ion-icon name="cloud-offline"></ion-icon>
+            </div>
+            
+        </div>
+
+        <div style="background: rgba(0, 210, 255, 0.1); padding: 8px; border-radius: 12px; cursor: pointer; border: 1px solid var(--blue-glow); transition: 0.3s;" onclick="window.location.href='patient_dash.html'">
+            <ion-icon name="wifi" style="color: var(--blue-glow); font-size: 24px;"></ion-icon>
+        </div>
+    </header>
+
+<div class="section-container emergency-zone">
+        <h3 class="section-title" style="color: var(--red-glow);" data-i18n="emergency_zone_title">
+            <ion-icon name="warning"></ion-icon> غرفة الطوارئ القصوى
+        </h3>
+        <p style="font-size: 12px; color: var(--text-sub); margin-top: -10px; margin-bottom: 15px;" data-i18n="emergency_zone_desc">دليل سريع منقذ للحياة وأرقام تهمك (يعمل بدون إنترنت).</p>
+        
+        <div class="sos-grid">
+            <div class="sos-btn" onclick="openModal('modal-first-aid')">
+                <ion-icon name="medkit"></ion-icon>
+                <span data-i18n="first_aid">دليل الإسعافات</span>
+            </div>
+            <div class="sos-btn" onclick="openModal('modal-contacts')">
+                <ion-icon name="call"></ion-icon>
+                <span data-i18n="emergency_contacts">أرقام الطوارئ</span>
+            </div>
+            <div class="sos-btn" style="grid-column: span 2; background: rgba(255, 75, 43, 0.25); border-color: var(--red-glow);" onclick="openModal('modal-medical-id')">
+                <ion-icon name="id-card" style="font-size: 38px;"></ion-icon>
+                <span data-i18n="medical_id_card" style="font-size: 16px;">بطاقتي الطبية (للطوارئ) 🛡️</span>
+            </div>
+        </div>
+    </div> 
+
+  <div class="section-container">
+        <h3 class="section-title" style="color: var(--blue-glow);">
+            <ion-icon name="fitness"></ion-icon> <span data-i18n="personal_health_tools">أدوات الصحة الشخصية</span>
+        </h3>
+        
+        <div class="health-grid">
+            
+          <div class="tool-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; overflow: hidden;">
+                
+                <div style="position: absolute; top: -30px; right: -30px; width: 100px; height: 100px; background: var(--purple-glow); filter: blur(50px); opacity: 0.15; z-index: 0;"></div>
+                
+                <div style="position: relative; z-index: 1;">
+                    <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px;">
+                        
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 38px; height: 38px; border-radius: 12px; background: rgba(183, 148, 244, 0.15); display: flex; justify-content: center; align-items: center; color: var(--purple-glow); border: 1px solid rgba(183, 148, 244, 0.3);">
+                                <ion-icon name="medical" style="font-size: 20px;"></ion-icon>
+                            </div>
+                            <h4 style="margin: 0; color: white; font-size: 16px; font-weight: 800;"><span data-i18n="meds_bag_title">حقيبة الأدوية</span></h4>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                          <button onclick="openModal('modal-add-med')" style="background: linear-gradient(135deg, rgba(183, 148, 244, 0.15), rgba(183, 148, 244, 0.05)); border: 1px solid rgba(183, 148, 244, 0.3); color: var(--purple-glow); padding: 12px; border-radius: 14px; font-family: 'Cairo'; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; transition: 0.3s; box-shadow: 0 4px 15px rgba(183, 148, 244, 0.05);">
+    <ion-icon name="alarm-outline" style="font-size: 18px;"></ion-icon> <span data-i18n="btn_dose_reminder">تذكير جرعة</span>
+</button>
+
+<button onclick="openModal('modal-refill-med')" style="background: linear-gradient(135deg, rgba(255, 154, 158, 0.15), rgba(255, 154, 158, 0.05)); border: 1px solid rgba(255, 154, 158, 0.3); color: var(--orange); padding: 12px; border-radius: 14px; font-family: 'Cairo'; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; transition: 0.3s; box-shadow: 0 4px 15px rgba(255, 154, 158, 0.05);">
+    <ion-icon name="cube-outline" style="font-size: 18px;"></ion-icon> <span data-i18n="btn_refill_alert">تنبيه علبة</span>
+</button>
+                        </div>
+                    </div>
+                    
+                    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 15px 0;">
+                    
+                    <div id="offline-meds-list" class="data-list"></div>
+                </div>
+            </div>
+
+            <div class="tool-card water-tracker">
+                <div>
+                    <h4 style="margin: 0; color: var(--blue-glow);"><ion-icon name="water"></ion-icon> <span data-i18n="water_tracker_title">الترطيب اليومي</span></h4>
+                    <p style="margin: 5px 0 10px 0; font-size: 12px; color: var(--text-sub);" data-i18n="water_goal_desc">الهدف: 8 أكواب يومياً</p>
+                    <button class="hm-btn" style="width: auto; padding: 8px 15px; font-size: 12px;" onclick="window.offlineApp.addWater()" data-i18n="water_add_cup">+ شرب كوب</button>
+                    <button class="hm-btn" style="width: auto; padding: 8px 15px; font-size: 12px; background: transparent; border: 1px solid var(--blue-glow); color: var(--blue-glow);" onclick="window.offlineApp.resetWater()" data-i18n="water_reset">تصفير</button>
+                </div>
+                <div class="water-glass">
+                    <div id="water-fill" class="water-fill" style="height: 0%;"></div>
+                    <span id="water-count" class="water-text">0</span>
+                </div>
+            </div>
+            <div class="tool-card" style="text-align: center;">
+                <h4 style="margin: 0 0 15px 0; color: var(--orange); text-align: right;"><ion-icon name="walk"></ion-icon> <span data-i18n="activity_tracker_title">النشاط اليومي</span></h4>
+                <div style="display: flex; justify-content: space-around; align-items: center;">
+                    <div style="position: relative; width: 100px; height: 100px; border-radius: 50%; background: conic-gradient(var(--orange) 0%, rgba(255,255,255,0.1) 0%); display: flex; justify-content: center; align-items: center; box-shadow: inset 0 0 15px rgba(0,0,0,0.5);" id="steps-circle">
+                        <div style="width: 80px; height: 80px; background: var(--bg-dark); border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            <ion-icon name="footsteps" style="color: var(--orange); font-size: 20px;"></ion-icon>
+                            <span id="steps-count" style="font-weight: 900; font-size: 18px; color: white;">0</span>
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <ion-icon name="flame" style="color: #ff4b2b; font-size: 30px; animation: pulse 1.5s infinite;"></ion-icon>
+                        <h3 id="cal-count" style="margin: 5px 0; color: white;">0</h3>
+                        <p style="margin: 0; font-size: 12px; color: var(--text-sub);" data-i18n="calories_unit">سعرة حرارية (kcal)</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <input type="number" id="step-input" class="hm-input" placeholder="أدخل خطواتك" data-i18n-placeholder="steps_input_ph" style="margin: 0;">
+                    <button class="hm-btn" style="background: var(--orange); width: auto; color: white;" onclick="window.offlineApp.addSteps()" data-i18n="btn_update">تحديث</button>
+                </div>
+            </div>
+
+            <div class="tool-card">
+                <h4 style="margin: 0 0 10px 0; color: #ff4b2b;"><ion-icon name="heart-half"></ion-icon> <span data-i18n="bpm_tracker_title">معدل نبضات القلب (BPM)</span></h4>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="bpm-input" class="hm-input" placeholder="نبضة/دقيقة (مثال: 85)" data-i18n-placeholder="bpm_input_ph" style="margin: 0;">
+                    <button class="hm-btn" style="background: #ff4b2b; width: auto; color: white;" onclick="window.offlineApp.addBPM()"><ion-icon name="add"></ion-icon></button>
+                </div>
+                <div id="bpm-list" class="data-list" style="max-height: 150px;"></div>
+            </div>
+
+            <div class="tool-card">
+                <h4 style="margin: 0 0 10px 0; color: var(--green-glow);"><ion-icon name="pulse"></ion-icon> <span data-i18n="vitals_log_title">سجل القياسات</span></h4>
+                <div style="display: flex; gap: 10px;">
+                    <select id="vital-type" class="hm-input" style="flex: 1; margin: 0;">
+                        <option value="الضغط" data-i18n="vital_bp">ضغط الدم</option>
+                        <option value="السكر" data-i18n="vital_sugar">مستوى السكر</option>
+                        <option value="الحرارة" data-i18n="vital_temp">الحرارة</option>
+                    </select>
+                    <input type="text" id="vital-val" class="hm-input" placeholder="النتيجة" data-i18n-placeholder="vital_result_ph" style="flex: 1; margin: 0;">
+                    <button class="hm-btn" style="width: 50px; background: var(--green-glow); margin: 0;" onclick="window.offlineApp.addVital()"><ion-icon name="checkmark-done"></ion-icon></button>
+                </div>
+                <div id="vitals-list" class="data-list"></div>
+            </div>
+
+            <div class="tool-card">
+                <h4 style="margin: 0 0 10px 0; color: var(--text-main);"><ion-icon name="body"></ion-icon> <span data-i18n="bmi_calculator_title">حاسبة مؤشر كتلة الجسم (BMI)</span></h4>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="bmi-w" class="hm-input" placeholder="الوزن (KG)" data-i18n-placeholder="bmi_weight_ph" style="margin: 0;">
+                    <input type="number" id="bmi-h" class="hm-input" placeholder="الطول (CM)" data-i18n-placeholder="bmi_height_ph" style="margin: 0;">
+                </div>
+                <button class="hm-btn" style="margin-top: 10px; background: white;" onclick="window.offlineApp.calcBMI()" data-i18n="bmi_calc_btn">احسب النتيجة</button>
+                <div id="bmi-result" style="text-align: center; margin-top: 10px; font-weight: bold; font-size: 18px;"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="modal-first-aid" class="modal-overlay" onclick="closeModal(event, 'modal-first-aid')">
+        <div class="modal-box">
+            <h3 style="color: var(--red-glow); margin-top: 0;"><ion-icon name="medkit"></ion-icon> <span data-i18n="first_aid_modal_title">الإسعافات الأولية</span></h3>
+            <div style="color: var(--text-sub); font-size: 14px; line-height: 1.6;">
+                <strong style="color: white;" data-i18n="first_aid_cpr">1. الإنعاش القلبي الرئوي (CPR):</strong><br>
+                <span data-i18n="first_aid_cpr_desc">اضغط بقوة وسرعة في منتصف الصدر (100-120 ضغطة/دقيقة).</span><hr style="border:0; border-top:1px solid #333;">
+                <strong style="color: white;" data-i18n="first_aid_burns">2. الحروق:</strong><br>
+                <span data-i18n="first_aid_burns_desc">ضع الجزء المصاب تحت ماء جارٍ فاتر لمدة 15-20 دقيقة. لا تضع ثلجاً أو معجون أسنان.</span><hr style="border:0; border-top:1px solid #333;">
+                <strong style="color: white;" data-i18n="first_aid_bleeding">3. النزيف الشديد:</strong><br>
+                <span data-i18n="first_aid_bleeding_desc">اضغط بقوة ومباشرة على الجرح بقطعة قماش نظيفة وارفع العضو المصاب إن أمكن.</span><hr style="border:0; border-top:1px solid #333;">
+                <strong style="color: white;" data-i18n="first_aid_choking">4. الاختناق (الغصة):</strong><br>
+                <span data-i18n="first_aid_choking_desc">قف خلف المصاب وقم بـ 5 ضربات على الظهر ثم 5 ضغطات قوية على البطن للداخل وللأعلى.</span>
+            </div>
+            <button class="hm-btn" style="margin-top: 20px; background: #333; color: white;" onclick="document.getElementById('modal-first-aid').classList.remove('active')" data-i18n="btn_close">إغلاق</button>
+        </div>
+    </div>
+
+   <div id="modal-contacts" class="modal-overlay" onclick="closeModal(event, 'modal-contacts')">
+        <div class="modal-box">
+            <h3 style="color: var(--red-glow); margin-top: 0;" data-i18n="emergency_contacts_title"><ion-icon name="call"></ion-icon> أرقام الطوارئ</h3>
+            
+            <div style="margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+                <p style="font-size: 11px; color: var(--text-sub); margin-bottom: 8px;">الخطوط الوطنية الساخنة:</p>
+                <div style="display: flex; gap: 10px;">
+                    <a href="tel:14" class="sos-btn" style="flex: 1; padding: 10px; background: #ce1126;"><ion-icon name="flame"></ion-icon> 14</a>
+                    <a href="tel:3016" class="sos-btn" style="flex: 1; padding: 10px; background: #003087;"><ion-icon name="medkit"></ion-icon> 3016</a>
+                </div>
+            </div>
+
+            <div id="local-emergency-section" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; margin-bottom: 20px;">
+                <p style="font-size: 11px; color: var(--blue-glow); margin-bottom: 8px;">أرقام مديرية ولاية <span id="current-wilaya-name">...</span>:</p>
+                <div id="local-numbers-list" style="display: flex; flex-direction: column; gap: 8px;">
+                    </div>
+            </div>
+
+            <hr style="border:0; border-top:1px solid #333; margin: 20px 0;">
+            
+            <h4 style="margin: 0 0 10px 0;" data-i18n="contact_add_personal">إضافة جهة اتصال شخصية:</h4>
+            <input type="text" id="contact-name" class="hm-input" placeholder="اسم الشخص" data-i18n-placeholder="contact_name_ph">
+            <input type="tel" id="contact-phone" class="hm-input" placeholder="رقم الهاتف" data-i18n-placeholder="contact_phone_ph">
+            <button class="hm-btn" onclick="window.offlineApp.addContact()" data-i18n="contact_save_btn">حفظ الرقم</button>
+
+            <div id="contacts-list" class="data-list" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+ <div id="modal-add-med" class="modal-overlay" onclick="closeModal(event, 'modal-add-med')">
+        <div class="modal-box">
+            <h3 style="color: var(--purple-glow); margin-top: 0;" data-i18n="meds_add_new"><ion-icon name="alarm"></ion-icon> تذكير الجرعات اليومية</h3>
+            
+            <input type="text" id="rm-name" class="hm-input" data-i18n-placeholder="meds_name_ph" placeholder="اسم الدواء (مثال: باراسيتامول)">
+            
+            <select id="rm-meal" class="hm-input" style="margin-top: 5px;">
+                <option value="before" data-i18n="meds_meal_before">يُؤخذ قبل الأكل 🍽️</option>
+                <option value="during" data-i18n="meds_meal_during">يُؤخذ وسط الأكل 🍛</option>
+                <option value="after" data-i18n="meds_meal_after">يُؤخذ بعد الأكل ☕</option>
+                <option value="any" data-i18n="meds_meal_any">بدون أكل / في أي وقت 💧</option>
+            </select>
+
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button id="btn-morning" class="slot-btn" onclick="window.offlineApp.toggleSlot('morning')" data-i18n="meds_slot_morning">صباحاً</button>
+                <button id="btn-noon" class="slot-btn" onclick="window.offlineApp.toggleSlot('noon')" data-i18n="meds_slot_noon">ظهراً</button>
+                <button id="btn-evening" class="slot-btn" onclick="window.offlineApp.toggleSlot('evening')" data-i18n="meds_slot_evening">مساءً</button>
+            </div>
+
+            <div id="row-morning" class="time-row" style="display: none; align-items: center; justify-content: space-between; margin-top: 10px;">
+                <span style="font-size: 13px; color: #aaa;" data-i18n="meds_time_morning">الصباح:</span><input type="time" id="time-morning" class="hm-input" style="width: 150px; margin:0;">
+            </div>
+            <div id="row-noon" class="time-row" style="display: none; align-items: center; justify-content: space-between; margin-top: 10px;">
+                <span style="font-size: 13px; color: #aaa;" data-i18n="meds_time_noon">الظهر:</span><input type="time" id="time-noon" class="hm-input" style="width: 150px; margin:0;">
+            </div>
+            <div id="row-evening" class="time-row" style="display: none; align-items: center; justify-content: space-between; margin-top: 10px;">
+                <span style="font-size: 13px; color: #aaa;" data-i18n="meds_time_evening">المساء:</span><input type="time" id="time-evening" class="hm-input" style="width: 150px; margin:0;">
+            </div>
+
+            <button class="hm-btn" style="background: var(--purple-glow); margin-top: 15px;" onclick="window.offlineApp.addMed()" data-i18n="meds_save_btn">حفظ التذكير ✔️</button>
+        </div>
+    </div>
+
+   <div id="modal-refill-med" class="modal-overlay" onclick="closeModal(event, 'modal-refill-med')">
+        <div class="modal-box">
+            <h3 style="color: var(--orange); margin-top: 0;">
+                <ion-icon name="cube"></ion-icon> <span data-i18n="refill_alert_title">تنبيه نفاد العلبة</span>
+            </h3>
+            <p style="font-size:12px; color:var(--text-sub); margin-bottom:15px;" data-i18n="refill_alert_desc">سنقوم بتنبيهك بشراء علبة جديدة قبل يومين من الانتهاء.</p>
+            
+            <input type="text" id="refill-name" class="hm-input" data-i18n="refill_name_ph" placeholder="اسم الدواء (مثال: دواء الضغط)">
+            <input type="number" id="refill-total" class="hm-input" data-i18n="refill_total_ph" placeholder="إجمالي الحبات في العلبة (مثال: 30)">
+            <input type="number" id="refill-per-day" class="hm-input" data-i18n="refill_per_day_ph" placeholder="كم حبة تأكل في اليوم؟ (مثال: 1)">
+            
+            <button class="hm-btn" style="background: #ff9f43; color: #000; font-weight: 900; font-size: 15px; margin-top: 15px; border: none; border-radius: 12px; width: 100%; box-shadow: 0 5px 20px rgba(255, 159, 67, 0.4); cursor: pointer;" onclick="window.offlineApp.addRefillAlert()" data-i18n="refill_btn_schedule">
+                جدولة التنبيه 📦
+            </button>
+        </div>
+    </div>
+
+    <div id="royal-toast"><ion-icon name="information-circle" style="color: var(--blue-glow); font-size: 20px;"></ion-icon> <span id="toast-msg"></span></div>
+    <div id="modal-medical-id" class="modal-overlay" onclick="closeModal(event, 'modal-medical-id')">
+        <div class="modal-box" style="border-top: 5px solid var(--red-glow);">
+            <h3 style="color: var(--red-glow); margin-top: 0; text-align: center;"><ion-icon name="id-card"></ion-icon> <span data-i18n="medical_id_title">الهوية الطبية</span></h3>
+            
+            <div id="medical-id-view">
+                </div>
+
+            <hr style="border:0; border-top:1px solid var(--glass-border); margin:15px 0;">
+            
+            <div id="medical-id-edit" style="display: none; flex-direction: column; gap: 10px;">
+                <input type="text" id="mid-name" class="hm-input" placeholder="الاسم الكامل" data-i18n-placeholder="mid_name_ph">
+                <select id="mid-blood" class="hm-input">
+                    <option value="" data-i18n="mid_blood_ph">فصيلة الدم...</option>
+                    <option value="A+">A+</option><option value="A-">A-</option>
+                    <option value="B+">B+</option><option value="B-">B-</option>
+                    <option value="O+">O+</option><option value="O-">O-</option>
+                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                </select>
+                <input type="text" id="mid-disease" class="hm-input" placeholder="أمراض مزمنة (مثال: سكري، ضغط...)" data-i18n-placeholder="mid_disease_ph">
+                <input type="text" id="mid-allergy" class="hm-input" placeholder="هل لديك حساسية من أدوية معينة؟" data-i18n-placeholder="mid_allergy_ph">
+                <button class="hm-btn" style="background: var(--red-glow); color: white;" onclick="window.offlineApp.saveMedicalID()" data-i18n="btn_save_mid">حفظ الهوية الطبية ✔️</button>
+            </div>
+            
+            <button id="btn-toggle-mid" class="hm-btn" style="background: transparent; border: 1px solid var(--red-glow); color: var(--red-glow); margin-top: 10px;" onclick="window.offlineApp.toggleMedicalIdEdit()" data-i18n="btn_edit_mid">تعديل البيانات ✏️</button>
+        </div>
+    </div>
+    
+    <script src="../js/languages.js"></script>
+   <script>
+    
+        // ==========================================
+        // 1. نظام التنبيهات الملكي (اغتيال إشعارات المتصفح الزفت 🚫)
+        // ==========================================
+        window.showToast = function(msg) {
+            const toast = document.getElementById('royal-toast');
+            if(!toast) return;
+            document.getElementById('toast-msg').innerText = msg;
+            toast.style.bottom = '30px';
+            setTimeout(() => { toast.style.bottom = '-100px'; }, 3000);
+        };
+
+        // دالة جديدة تعوض alert() البشعة بنافذة زجاجية فخمة تظهر فوق كل شيء
+        window.royalAlert = function(title, msg, iconName = 'alert-circle', color = 'var(--red-glow)') {
+            const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+            const overlay = document.createElement('div');
+            overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:9999999; display:flex; justify-content:center; align-items:center; opacity:0; transition:0.3s;";
+            overlay.innerHTML = `
+                <div style="background:#111; border:1px solid rgba(255,255,255,0.1); padding:25px; border-radius:25px; width:80%; max-width:350px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.5); transform:scale(0.8); transition:0.3s;">
+                    <ion-icon name="${iconName}" style="font-size:50px; color:${color}; margin-bottom:10px;"></ion-icon>
+                    <h3 style="color:white; margin:0 0 10px 0; font-family:'Cairo';">${title}</h3>
+                    <p style="color:var(--text-sub); font-size:14px; margin-bottom:20px; font-family:'Cairo';">${msg}</p>
+                    <button style="width:100%; padding:12px; border-radius:12px; background:${color}; color:white; font-weight:bold; border:none; cursor:pointer; font-family:'Cairo';" onclick="this.parentElement.parentElement.remove()">${dict.btn_ok || 'حسناً'}</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => { overlay.style.opacity = '1'; overlay.children[0].style.transform = 'scale(1)'; }, 10);
+        };
+
+        // 2. التحكم في النوافذ المنبثقة
+        window.openModal = function(id) {
+            document.getElementById(id).classList.add('active');
+        };
+        window.closeModal = function(e, id) {
+            if(e.target.id === id) document.getElementById(id).classList.remove('active');
+        };
+        // ==========================================
+        // 🚀 محرك التنبيهات الزجاجية الأنيقة (بديل Alert المتصفح)
+        // ==========================================
+        window.showOfflineToast = function(msg, isError = false) {
+            let toast = document.getElementById('hm-offline-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'hm-offline-toast';
+                toast.style.cssText = `
+                    position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+                    background: rgba(15, 15, 15, 0.9); backdrop-filter: blur(15px);
+                    border: 1px solid rgba(255,255,255,0.1); color: white;
+                    padding: 12px 25px; border-radius: 50px; font-family: 'Cairo', sans-serif;
+                    font-weight: 800; font-size: 13px; z-index: 9999999;
+                    display: flex; align-items: center; gap: 10px; width: max-content; max-width: 90%;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                    transition: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                `;
+                document.body.appendChild(toast);
+            }
+            
+            // تحديد الأيقونة واللون حسب نوع الرسالة (خطأ أم نجاح)
+            const icon = isError ? 
+                '<ion-icon name="warning" style="color: #ff4b2b; font-size: 22px;"></ion-icon>' : 
+                '<ion-icon name="checkmark-circle" style="color: #10b981; font-size: 22px;"></ion-icon>';
+            
+            toast.innerHTML = `${icon} <span style="text-align: right;">${msg}</span>`;
+            toast.style.bottom = '40px'; // إظهار التنبيه
+            
+            // إخفاء التنبيه أوتوماتيكياً بعد 3 ثوانٍ
+            setTimeout(() => { toast.style.bottom = '-100px'; }, 3000);
+        };
+        // 3. العقل المدبر لتطبيق الأوفلاين (Data Engine)
+        window.offlineApp = {
+            
+            // --- أداة الأدوية (النسخة المتطورة + الإشعارات) ---
+            activeSlots: { morning: false, noon: false, evening: false },
+            toggleSlot: function(slot) {
+                this.activeSlots[slot] = !this.activeSlots[slot];
+                const btn = document.getElementById(`btn-${slot}`);
+                const row = document.getElementById(`row-${slot}`);
+                if (this.activeSlots[slot]) {
+                    btn.classList.add('active');
+                    row.style.display = 'flex';
+                } else {
+                    btn.classList.remove('active');
+                    row.style.display = 'none';
+                }
+            },
+           // 🚨 5. تحديث دالة الرسم لتفصل شكل العلبة عن الجرعة في القائمة
+            loadMeds: function() {
+                const list = document.getElementById('offline-meds-list');
+                const meds = JSON.parse(localStorage.getItem('offline_meds') || '[]');
+               // 1. جلب القاموس الحالي
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                
+                // 2. التحقق من وجود أدوية وعرض رسالة مترجمة
+                if (meds.length === 0) {
+                    list.innerHTML = `<p style="text-align:center; font-size:12px; color:var(--text-sub);">${dict.meds_no_alerts || 'لا توجد تنبيهات مسجلة.'}</p>`;
+                    return;
+                }
+                
+                list.innerHTML = meds.map((m, index) => {
+                    if (m.type === 'refill') {
+                        return `
+                            <div class="data-item" style="border-right: 3px solid var(--orange); background: rgba(255, 154, 158, 0.05);">
+                                <div class="data-item-info">
+                                    <h4 style="color: var(--orange);"><ion-icon name="cube"></ion-icon> ${m.name} (نفاد العلبة)</h4>
+                                    <p style="font-size: 11px;">العلبة: ${m.totalPills} حبة | الاستهلاك: ${m.perDay} يومياً</p>
+                                </div>
+                                <ion-icon name="trash" style="color: var(--red-glow); cursor:pointer;" onclick="window.offlineApp.deleteMed(${index})"></ion-icon>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="data-item" style="border-right: 3px solid var(--purple-glow);">
+                                <div class="data-item-info">
+                                    <h4><ion-icon name="alarm"></ion-icon> ${m.name}</h4>
+                                    <p>${m.times ? m.times.join(' - ') : ''}</p>
+                                </div>
+                                <ion-icon name="trash" style="color: var(--red-glow); cursor:pointer;" onclick="window.offlineApp.deleteMed(${index})"></ion-icon>
+                            </div>
+                        `;
+                    }
+                }).join('');
+            },
+          // 🚨 1. دالة إضافة تذكير الجرعات اليومية فقط
+          // 🚨 1. دالة إضافة تذكير الجرعات اليومية فقط
+            addMed: async function() {
+                const name = document.getElementById('rm-name').value;
+                const meal = document.getElementById('rm-meal').value;
+                
+                const times = [];
+                if(this.selectedSlots.morning) times.push(document.getElementById('time-morning').value);
+                if(this.selectedSlots.noon) times.push(document.getElementById('time-noon').value);
+                if(this.selectedSlots.evening) times.push(document.getElementById('time-evening').value);
+
+                if(!name || times.length === 0) {
+                    // رسالة خطأ أنيقة باللون الأحمر
+                    return window.showOfflineToast("يرجى إدخال اسم الدواء وتحديد وقت واحد على الأقل ⚠️", true);
+                }
+
+                const newMed = { 
+                    id: Date.now(), name: name, meal: meal, times: times, type: 'daily' 
+                };
+
+                let meds = JSON.parse(localStorage.getItem('offline_meds') || '[]');
+                meds.push(newMed);
+                localStorage.setItem('offline_meds', JSON.stringify(meds));
+
+                await this.scheduleMedNotifications(newMed);
+
+                document.getElementById('modal-add-med').classList.remove('active');
+                this.loadMeds(); 
+                
+                // رسالة نجاح أنيقة باللون الأخضر
+                window.showOfflineToast("تم حفظ الدواء وجدولة التنبيهات بنجاح! 💊", false);
+            },
+           // 🚨 2. دالة إضافة تنبيه نفاد العلبة فقط
+            addRefillAlert: async function() {
+                const name = document.getElementById('refill-name').value;
+                const total = parseInt(document.getElementById('refill-total').value) || 0;
+                const perDay = parseInt(document.getElementById('refill-per-day').value) || 0;
+
+                if(!name || total <= 0 || perDay <= 0) {
+                    // رسالة خطأ أنيقة
+                    return window.showOfflineToast("يرجى إدخال اسم الدواء وعدد الحبات بشكل صحيح ⚠️", true);
+                }
+
+                const newRefill = {
+                    id: Date.now(), name: name, totalPills: total, perDay: perDay, type: 'refill'
+                };
+
+                let meds = JSON.parse(localStorage.getItem('offline_meds') || '[]');
+                meds.push(newRefill);
+                localStorage.setItem('offline_meds', JSON.stringify(meds));
+
+                await this.scheduleRefillNotification(newRefill);
+
+                document.getElementById('modal-refill-med').classList.remove('active');
+                this.loadMeds();
+                
+                // رسالة نجاح أنيقة
+                window.showOfflineToast("تم جدولة تنبيه نفاد العلبة بنجاح! 📦", false);
+            },
+
+            // 🚨 3. محرك الجدولة للجرعات اليومية
+            scheduleMedNotifications: async function(med) {
+                if (!window.Capacitor || !window.Capacitor.Plugins.LocalNotifications) return;
+                const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+
+                let mealText = "في أي وقت";
+                if(med.meal === 'before') mealText = "قبل الأكل 🍽️";
+                else if(med.meal === 'during') mealText = "وسط الأكل 🍛";
+                else if(med.meal === 'after') mealText = "بعد الأكل ☕";
+
+                const notifications = [];
+                med.times.forEach((timeStr, index) => {
+                    if(!timeStr) return;
+                    const [hours, minutes] = timeStr.split(':');
+                    
+                    notifications.push({
+                        id: parseInt(`${med.id}${index}`.substring(0, 8)),
+                        title: "حان موعد الدواء 💊",
+                        body: `لا تنسَ أخذ دواء [ ${med.name} ] ${mealText}. بالشفاء العاجل!`,
+                        schedule: { on: { hour: parseInt(hours), minute: parseInt(minutes) }, repeats: true },
+                        channelId: 'healthmate_urgent_v2'
+                    });
+                });
+
+                await LocalNotifications.schedule({ notifications: notifications });
+            },
+            // 🚨 4. محرك الجدولة لنفاد العلبة
+            scheduleRefillNotification: async function(med) {
+                if (!window.Capacitor || !window.Capacitor.Plugins.LocalNotifications) return;
+                const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+
+                const daysLeft = Math.floor(med.totalPills / med.perDay);
+                const warningDays = daysLeft > 2 ? daysLeft - 2 : daysLeft; 
+                
+                const warningDate = new Date();
+                warningDate.setDate(warningDate.getDate() + warningDays);
+                warningDate.setHours(10, 0, 0, 0); // التنبيه يجي مع 10 صباحاً
+
+                await LocalNotifications.schedule({
+                    notifications: [{
+                        id: parseInt(`${med.id}999`.substring(0, 8)),
+                        title: "⚠️ تنبيه اقتراب نفاد الدواء!",
+                        body: `تنبيه: دواء [ ${med.name} ] قارب على الانتهاء! يرجى شراء علبة جديدة.`,
+                        schedule: { at: warningDate },
+                        channelId: 'healthmate_urgent_v2'
+                    }]
+                });
+            },
+            takePill: function(index) {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                let meds = JSON.parse(localStorage.getItem('offline_meds') || '[]');
+                if(meds[index].totalPills > 0) {
+                    meds[index].totalPills -= 1;
+                    localStorage.setItem('offline_meds', JSON.stringify(meds));
+                    this.loadMeds();
+                    window.showToast(dict.meds_healing || "بالشفاء العاجل إن شاء الله 🤲");
+                } else {
+                    window.royalAlert(dict.alert_warning || "تنبيه", dict.meds_finished || "لقد نفذت كمية هذا الدواء! اتصل بالصيدلي لتجديده ⚠️", "warning", "var(--red-glow)");
+                }
+            },
+            deleteMed: function(index) {
+                let meds = JSON.parse(localStorage.getItem('offline_meds') || '[]');
+                meds.splice(index, 1);
+                localStorage.setItem('offline_meds', JSON.stringify(meds));
+                this.loadMeds();
+            },
+
+            // --- أداة الماء ---
+            addWater: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                let count = parseInt(localStorage.getItem('offline_water') || '0');
+                if(count >= 8) return window.showToast(dict.water_goal_reached || "ممتاز! حققت هدفك اليومي للماء 💧");
+                count++;
+                localStorage.setItem('offline_water', count.toString());
+                this.loadWater();
+            },
+            resetWater: function() {
+                localStorage.setItem('offline_water', '0');
+                this.loadWater();
+            },
+            loadWater: function() {
+                const count = parseInt(localStorage.getItem('offline_water') || '0');
+                document.getElementById('water-count').innerText = count;
+                const fillEl = document.getElementById('water-fill');
+                if(fillEl) fillEl.style.height = `${(count / 8) * 100}%`;
+            },
+
+            // --- أداة القياسات ---
+            addVital: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const type = document.getElementById('vital-type').value;
+                const val = document.getElementById('vital-val').value.trim();
+                if(!val) return window.royalAlert(dict.alert_warning || "تنبيه", dict.vital_enter_val || "يرجى إدخال النتيجة ⚠️", "alert", "var(--orange)");
+                
+                let vitals = JSON.parse(localStorage.getItem('offline_vitals') || '[]');
+                const date = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                vitals.unshift({ type, val, date });
+                if(vitals.length > 10) vitals.pop(); 
+                
+                localStorage.setItem('offline_vitals', JSON.stringify(vitals));
+                document.getElementById('vital-val').value = '';
+                this.loadVitals();
+                window.showToast(dict.vital_saved || "تم تسجيل القياس بنجاح 📊");
+            },
+            loadVitals: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const list = document.getElementById('vitals-list');
+                let vitals = JSON.parse(localStorage.getItem('offline_vitals') || '[]');
+                if(vitals.length === 0) { list.innerHTML = `<p style="text-align:center; color:#666; font-size:12px;">${dict.vital_empty || 'لا توجد قياسات مسجلة.'}</p>`; return; }
+                
+                list.innerHTML = vitals.map((v, i) => `
+                    <div class="data-item" style="padding: 8px 15px;">
+                        <div class="data-item-info"><h4>${v.type}</h4><p>${v.date}</p></div>
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <strong style="color:var(--green-glow); font-size:16px;">${v.val}</strong>
+                            <ion-icon name="trash" class="delete-icon" onclick="window.offlineApp.deleteVital(${i})"></ion-icon>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            deleteVital: function(index) {
+                let vitals = JSON.parse(localStorage.getItem('offline_vitals') || '[]');
+                vitals.splice(index, 1);
+                localStorage.setItem('offline_vitals', JSON.stringify(vitals));
+                this.loadVitals();
+            },
+
+            // --- أداة الـ BMI ---
+            calcBMI: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const w = parseFloat(document.getElementById('bmi-w').value);
+                const h = parseFloat(document.getElementById('bmi-h').value) / 100;
+                const resDiv = document.getElementById('bmi-result');
+                
+                if(!w || !h) return window.royalAlert(dict.alert_warning || "تنبيه", dict.bmi_enter_info || "أدخل الوزن والطول أولاً ⚠️", "warning", "var(--orange)");
+                
+                const bmi = (w / (h * h)).toFixed(1);
+                let status = "", color = "";
+                
+                if(bmi < 18.5) { status = dict.bmi_underweight || "نحافة"; color = "var(--blue-glow)"; }
+                else if(bmi < 24.9) { status = dict.bmi_normal || "وزن طبيعي ومثالي"; color = "var(--green-glow)"; }
+                else if(bmi < 29.9) { status = dict.bmi_overweight || "وزن زائد قليلاً"; color = "orange"; }
+                else { status = dict.bmi_obese || "سمنة (انتبه لصحتك)"; color = "var(--red-glow)"; }
+                
+                resDiv.innerHTML = `${dict.bmi_result || 'النتيجة:'} ${bmi} <br><span style="color:${color}; font-size:16px;">${status}</span>`;
+            },
+
+            // --- جهات الاتصال ---
+            addContact: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const name = document.getElementById('contact-name').value.trim();
+                const phone = document.getElementById('contact-phone').value.trim();
+                if(!name || !phone) return window.royalAlert(dict.alert_warning || "تنبيه", dict.contact_enter_info || "أدخل الاسم والرقم ⚠️", "warning", "var(--orange)");
+                
+                let contacts = JSON.parse(localStorage.getItem('offline_contacts') || '[]');
+                contacts.push({ name, phone });
+                localStorage.setItem('offline_contacts', JSON.stringify(contacts));
+                
+                document.getElementById('contact-name').value = '';
+                document.getElementById('contact-phone').value = '';
+                this.loadContacts();
+            },
+            loadContacts: function() {
+                const list = document.getElementById('contacts-list');
+                let contacts = JSON.parse(localStorage.getItem('offline_contacts') || '[]');
+                list.innerHTML = contacts.map((c, i) => `
+                    <div class="data-item" style="margin-bottom:8px;">
+                        <div class="data-item-info"><h4>${c.name}</h4><p>${c.phone}</p></div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <a href="tel:${c.phone}" class="hm-btn" style="width:auto; padding:5px 15px; background:var(--blue-glow); text-decoration:none;"><ion-icon name="call"></ion-icon></a>
+                            <ion-icon name="trash" class="delete-icon" onclick="window.offlineApp.deleteContact(${i})"></ion-icon>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            deleteContact: function(index) {
+                let contacts = JSON.parse(localStorage.getItem('offline_contacts') || '[]');
+                contacts.splice(index, 1);
+                localStorage.setItem('offline_contacts', JSON.stringify(contacts));
+                this.loadContacts();
+            },
+
+            // --- أداة الخطوات والسعرات ---
+            addSteps: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const steps = parseInt(document.getElementById('step-input').value);
+                if(isNaN(steps) || steps < 0) return window.royalAlert(dict.alert_warning || "تنبيه", dict.steps_enter_valid || "أدخل عدد خطوات صحيح ⚠️", "walk", "var(--orange)");
+                
+                const calories = Math.floor(steps * 0.04); 
+                
+                localStorage.setItem('offline_steps', steps);
+                localStorage.setItem('offline_cals', calories);
+                
+                document.getElementById('step-input').value = '';
+                this.loadSteps();
+                window.showToast(dict.steps_saved || "تم تحديث نشاطك الرياضي 💪");
+            },
+            loadSteps: function() {
+                const steps = parseInt(localStorage.getItem('offline_steps') || '0');
+                const cals = parseInt(localStorage.getItem('offline_cals') || '0');
+                const goal = 8000;
+                
+                let percent = (steps / goal) * 100;
+                if(percent > 100) percent = 100;
+                
+                if(document.getElementById('steps-count')) document.getElementById('steps-count').innerText = steps;
+                if(document.getElementById('cal-count')) document.getElementById('cal-count').innerText = cals;
+                if(document.getElementById('steps-circle')) document.getElementById('steps-circle').style.background = `conic-gradient(var(--orange) ${percent}%, rgba(255,255,255,0.05) ${percent}%)`;
+            },
+
+            // --- أداة نبض القلب ---
+            addBPM: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const bpm = parseInt(document.getElementById('bpm-input').value);
+                if(isNaN(bpm) || bpm < 30 || bpm > 250) return window.royalAlert(dict.alert_warning || "تنبيه", dict.bpm_enter_valid || "أدخل معدل نبض صحيح ⚠️", "heart-half", "var(--red-glow)");
+                
+                let bpmList = JSON.parse(localStorage.getItem('offline_bpm') || '[]');
+                const date = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                bpmList.unshift({ val: bpm, date: date });
+                if(bpmList.length > 7) bpmList.pop(); 
+                
+                localStorage.setItem('offline_bpm', JSON.stringify(bpmList));
+                document.getElementById('bpm-input').value = '';
+                this.loadBPM();
+            },
+            loadBPM: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const list = document.getElementById('bpm-list');
+                let bpmList = JSON.parse(localStorage.getItem('offline_bpm') || '[]');
+                if(bpmList.length === 0) { list.innerHTML = `<p style="font-size:12px; color:#666; text-align:center;">${dict.bpm_empty || 'لا توجد قراءات مسجلة.'}</p>`; return; }
+                
+                list.innerHTML = bpmList.map((b, i) => `
+                    <div class="data-item" style="padding: 8px 15px;">
+                        <div class="data-item-info"><h4>${b.val} <span style="font-size:10px; color:var(--text-sub);">BPM</span></h4></div>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:11px; color:var(--text-sub);">${b.date}</span>
+                            <ion-icon name="trash" class="delete-icon" style="font-size:18px;" onclick="window.offlineApp.deleteBPM(${i})"></ion-icon>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            deleteBPM: function(index) {
+                let bpmList = JSON.parse(localStorage.getItem('offline_bpm') || '[]');
+                bpmList.splice(index, 1);
+                localStorage.setItem('offline_bpm', JSON.stringify(bpmList));
+                this.loadBPM();
+            },
+
+           // --- أداة بطاقة الهوية الطبية (النسخة المصلحة 🛠️) ---
+            loadMedicalID: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const data = JSON.parse(localStorage.getItem('offline_medical_id') || '{}');
+                const viewDiv = document.getElementById('medical-id-view');
+                const editDiv = document.getElementById('medical-id-edit');
+                const btn = document.getElementById('btn-toggle-mid');
+                
+                if(document.getElementById('mid-name')) document.getElementById('mid-name').value = data.name || '';
+                if(document.getElementById('mid-blood')) document.getElementById('mid-blood').value = data.blood || '';
+                if(document.getElementById('mid-disease')) document.getElementById('mid-disease').value = data.disease || '';
+                if(document.getElementById('mid-allergy')) document.getElementById('mid-allergy').value = data.allergy || '';
+
+                if (!data.name || !data.blood) {
+                    viewDiv.innerHTML = `<p style="text-align:center; color:var(--orange); font-size:13px;" data-i18n="mid_not_set">لم تقم بإعداد هويتك الطبية بعد. يرجى تعبئتها لحالات الطوارئ القصوى!</p>`;
+                    viewDiv.style.display = 'block';
+                    editDiv.style.display = 'none';
+                    if(btn) btn.style.display = 'block';
+                } else {
+                    viewDiv.innerHTML = `
+                        <div style="background: rgba(255, 75, 43, 0.1); padding: 15px; border-radius: 15px; border: 1px solid var(--red-glow); text-align: right;">
+                            <p style="margin:0 0 8px 0; color:white;"><strong>👤 ${dict.mid_name || 'الاسم'}:</strong> ${data.name}</p>
+                            <p style="margin:0 0 8px 0; color:white;"><strong>🩸 ${dict.mid_blood || 'الفصيلة'}:</strong> <span style="color:var(--red-glow); font-weight:bold; font-size:18px;">${data.blood}</span></p>
+                            <p style="margin:0 0 8px 0; color:var(--orange);"><strong>⚠️ ${dict.mid_disease || 'أمراض مزمنة'}:</strong> ${data.disease || 'لا يوجد'}</p>
+                            <p style="margin:0 0 0 0; color:var(--blue-glow);"><strong>🚫 ${dict.mid_allergy || 'حساسية أدوية'}:</strong> ${data.allergy || 'لا يوجد'}</p>
+                        </div>
+                    `;
+                    viewDiv.style.display = 'block';
+                    editDiv.style.display = 'none';
+                    if(btn) btn.style.display = 'block';
+                }
+            },
+
+
+            // --- محرك أرقام الطوارئ الولائية الذكي ---
+            wilayaData: {
+                "سطيف": { pc: "036.83.14.14", samu: "036.92.51.51" },
+                "باتنة": { pc: "033.85.14.14", samu: "033.80.30.16" },
+                "الجزائر": { pc: "021.71.14.14", samu: "021.23.50.50" },
+                "وهران": { pc: "041.41.14.14", samu: "041.40.31.31" },
+                "قسنطينة": { pc: "031.92.14.14", samu: "031.94.20.20" },
+                "عنابة": { pc: "038.86.14.14", samu: "038.83.33.33" }
+                // يمكنك إضافة باقي الولايات بنفس التنسيق
+            },
+
+            loadLocalNumbers: function() {
+                // جلب الولاية التي حددها المستخدم سابقاً (مخزنة في localStorage)
+                const userWilaya = localStorage.getItem('user_wilaya') || "سطيف"; 
+                const data = this.wilayaData[userWilaya];
+                const listDiv = document.getElementById('local-numbers-list');
+                const nameSpan = document.getElementById('current-wilaya-name');
+
+                if (nameSpan) nameSpan.innerText = userWilaya;
+
+                if (data && listDiv) {
+                    listDiv.innerHTML = `
+                        <div class="data-item" style="background: rgba(0,0,0,0.3);">
+                            <div class="data-item-info"><h4>الحماية المدنية</h4><p>${data.pc}</p></div>
+                            <a href="tel:${data.pc.replace(/\./g,'')}" class="hm-btn" style="width:auto; padding:5px 15px; background:var(--red-glow);"><ion-icon name="call"></ion-icon></a>
+                        </div>
+                        <div class="data-item" style="background: rgba(0,0,0,0.3);">
+                            <div class="data-item-info"><h4>الإسعاف (SAMU)</h4><p>${data.samu}</p></div>
+                            <a href="tel:${data.samu.replace(/\./g,'')}" class="hm-btn" style="width:auto; padding:5px 15px; background:var(--blue-glow);"><ion-icon name="call"></ion-icon></a>
+                        </div>
+                    `;
+                } else {
+                    listDiv.innerHTML = `<p style="font-size:10px; color:#666;">لم يتم العثور على أرقام مخصصة لولايتك. استخدم الأرقام الوطنية.</p>`;
+                }
+            },
+            saveMedicalID: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const name = document.getElementById('mid-name').value.trim();
+                const blood = document.getElementById('mid-blood').value;
+                const disease = document.getElementById('mid-disease').value.trim();
+                const allergy = document.getElementById('mid-allergy').value.trim();
+
+                if(!name || !blood) return window.royalAlert(dict.alert_warning || "تنبيه", dict.mid_req || "الاسم وفصيلة الدم ضروريان جداً!", "warning", "var(--orange)");
+
+                const data = { name, blood, disease, allergy };
+                localStorage.setItem('offline_medical_id', JSON.stringify(data));
+                
+                // تحديث العرض فوراً
+                this.loadMedicalID();
+                window.showToast(dict.mid_saved || "تم حفظ بطاقتك الطبية بنجاح 🛡️");
+            },
+            saveMedicalID: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const name = document.getElementById('mid-name').value.trim();
+                const blood = document.getElementById('mid-blood').value;
+                const disease = document.getElementById('mid-disease').value.trim();
+                const allergy = document.getElementById('mid-allergy').value.trim();
+
+                if(!name || !blood) return window.royalAlert(dict.alert_warning || "تنبيه", dict.mid_req || "الاسم وفصيلة الدم ضروريان جداً!", "warning", "var(--orange)");
+
+                const data = { name, blood, disease, allergy };
+                localStorage.setItem('offline_medical_id', JSON.stringify(data));
+                
+                this.loadMedicalID();
+                this.toggleMedicalIdEdit(false);
+                window.showToast(dict.mid_saved || "تم حفظ بطاقتك الطبية بنجاح 🛡️");
+            },
+            toggleMedicalIdEdit: function(forceOpen) {
+                const editDiv = document.getElementById('medical-id-edit');
+                const viewDiv = document.getElementById('medical-id-view');
+                const btn = document.getElementById('btn-toggle-mid');
+                
+                if (forceOpen === true || editDiv.style.display === 'none') {
+                    editDiv.style.display = 'flex';
+                    viewDiv.style.display = 'none';
+                    btn.style.display = 'none';
+                } else {
+                    editDiv.style.display = 'none';
+                    viewDiv.style.display = 'block';
+                    btn.style.display = 'block';
+                }
+            },
+
+
+        };
+        // ==========================================
+// 🌍 محرك الترجمة الذكي لوضع الأوفلاين
+// ==========================================
+window.applyOfflineTranslations = function() {
+    const lang = localStorage.getItem('app_lang') || 'ar'; // جلب اللغة المختارة من الصفحة الأونلاين
+    const dict = (window.translations && window.translations[lang]) || {};
+
+    // 1. ترجمة النصوص العادية التي تحمل وسام data-i18n
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) el.innerText = dict[key];
+    });
+
+    // 2. ترجمة الحقول (Placeholders)
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (dict[key]) el.placeholder = dict[key];
+    });
+
+    // 3. ضبط اتجاه الصفحة (RTL/LTR) بناءً على اللغة
+    document.documentElement.dir = (lang === 'ar') ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
+};
+
+        // تشغيل جميع المحركات فور فتح الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+            window.applyOfflineTranslations();
+            window.offlineApp.loadMeds();
+            window.offlineApp.loadWater();
+            window.offlineApp.loadVitals();
+            window.offlineApp.loadContacts();
+            window.offlineApp.loadSteps();
+            window.offlineApp.loadBPM();
+            window.offlineApp.loadMedicalID();
+            window.offlineApp.loadLocalNumbers(); // 🚨 تشغيل محرك أرقام الولاية
+        });
+
+        // ==========================================
+        // زر الرجوع في الهاتف (Capacitor) + الهوية
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedName = localStorage.getItem('hm_patient_name') || "مريض (أوفلاين)";
+            const identityEl = document.getElementById('offline-user-identity');
+            if(identityEl) identityEl.innerText = savedName;
+
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                const App = window.Capacitor.Plugins.App;
+                App.addListener('backButton', () => {
+                    // إذا كان هناك نافذة Alert زجاجية مفتوحة، اغلقها
+                    const royalAlert = document.querySelector('div[style*="z-index: 9999999"]');
+                    const activeModal = document.querySelector('.modal-overlay.active');
+                    
+                    if (royalAlert) {
+                        royalAlert.remove();
+                    } else if (activeModal) {
+                        activeModal.classList.remove('active');
+                    } else {
+                        window.history.back();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

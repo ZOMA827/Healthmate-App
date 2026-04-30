@@ -1,0 +1,304 @@
+/* =========================================================
+   📱 حماية حواف الهاتف (Status Bar & Notch)
+   ========================================================= */
+body.royal-body {
+    background: var(--royal-black);
+    color: var(--pure-white);
+    font-family: 'Cairo', sans-serif;
+    margin: 0;
+    /* التعديل الجراحي هنا: إضافة الـ padding للهيكل نفسه مع قيمة افتراضية 40px */
+    padding-top: env(safe-area-inset-top, 40px);
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+    min-height: 100vh; /* تغيير height إلى min-height */
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: background 0.4s ease, color 0.4s ease;
+}
+
+/* رفع الإشعارات قليلاً لكي لا تختفي خلف شريط الأيفون السفلي */
+#toast-msg.show {
+    bottom: env(safe-area-inset-bottom, 40px); 
+    opacity: 1;
+}
+
+:root {
+
+    /* الوضع الليلي (الأصلي الخاص بك) */
+    --royal-black: #000000;
+    --royal-gray: #0a0a0a;
+    --pure-white: #ffffff;
+    --sub-white: #a0a0a0;
+    --border: rgba(255,255,255,0.1);
+    
+    /* ظلال الدوائر للوضع المظلم */
+    --circle-sh-1: rgba(0, 0, 0, 0.8);
+    --circle-sh-2: rgba(255, 255, 255, 0.05);
+}
+
+/* ☀️ تحويل الألوان عند تفعيل الوضع المشمس (Light Mode) */
+/* ملاحظة: سيتم الحفاظ على كل الستايلات، فقط القيم تتغير */
+/* ☀️ تحويل الألوان عند تفعيل الوضع المشمس (Light Mode) */
+[data-theme="light"] {
+    --royal-black: #e6e9ef;   /* خلفية فاتحة رمادية مريحة للعين */
+    --royal-gray: #ffffff;    /* كروت بيضاء ناصعة لتبرز */
+    --pure-white: #1a1a1a;    /* نصوص سوداء ملكية */
+    --sub-white: #555555;     /* نصوص فرعية واضحة */
+    --border: rgba(0,0,0,0.15); /* حدود أوضح */
+    
+    /* ظلال الدوائر للوضع الفاتح لتبدو بارزة ومفصولة */
+    --circle-sh-1: rgba(0, 0, 0, 0.1);
+    --circle-sh-2: rgba(255, 255, 255, 0.8);
+}
+
+/* 🚨 إبراز النوافذ (Modals) والصناديق في الوضع الفاتح 🚨 */
+[data-theme="light"] .royal-modal, 
+[data-theme="light"] .auth-box {
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08) !important;
+}
+
+body.royal-body {
+    background: var(--royal-black);
+    color: var(--pure-white);
+    font-family: 'Cairo', sans-serif;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: background 0.4s ease, color 0.4s ease; /* نعومة في الانتقال */
+}
+
+.auth-box {
+    width: 100%;
+    max-width: 420px;
+    padding: 30px;
+    position: relative;
+}
+
+.auth-content {
+    display: none;
+    flex-direction: column;
+    animation: slideUp 0.5s ease;
+}
+.auth-content.active { display: flex; }
+
+.header-zone { text-align: center; margin-bottom: 40px; }
+.main-logo { font-size: 65px; margin-bottom: 10px; }
+.header-zone h1 { font-size: 35px; font-weight: 900; margin: 0; letter-spacing: -1px; }
+.header-zone p { color: var(--sub-white); font-size: 14px; }
+
+/* الحقول الملكية */
+.r-field { position: relative; margin-bottom: 25px; border-bottom: 1px solid var(--border); }
+.r-field input, .r-field select {
+    width: 100%; padding: 15px 0; background: none; border: none;
+    color: var(--pure-white); font-size: 16px; outline: none; transition: 0.3s;
+}
+.r-field label {
+    position: absolute; top: 15px; right: 0; color: var(--sub-white);
+    transition: 0.3s; pointer-events: none;
+}
+.r-field input:focus ~ label, .r-field input:not(:placeholder-shown) ~ label {
+    top: -12px; font-size: 12px; color: var(--pure-white); font-weight: bold;
+}
+.r-field input:focus { border-bottom-color: var(--pure-white); }
+
+/* الأزرار الفخمة */
+.btn-royal-main {
+    background: var(--pure-white); color: var(--royal-black); border: none;
+    padding: 18px; border-radius: 12px; font-weight: 900; cursor: pointer;
+    font-size: 16px; transition: 0.3s; margin-top: 10px;
+}
+.btn-royal-main:active { transform: scale(0.97); }
+
+.btn-royal-google {
+    background: var(--royal-gray); color: var(--pure-white); border: 1px solid var(--border);
+    padding: 15px; border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; gap: 10px; font-weight: 700; cursor: pointer;
+}
+
+/* النافذة الزجاجية */
+.glass-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
+    display: none; align-items: center; justify-content: center; z-index: 1000;
+}
+[data-theme="light"] .glass-overlay { background: rgba(255,255,255,0.7); }
+
+.royal-modal {
+    background: var(--royal-gray); border: 1px solid var(--border); padding: 35px;
+    border-radius: 30px; width: 85%; max-width: 350px; text-align: center;
+}
+.lang-grid { display: grid; gap: 10px; margin: 25px 0; }
+.lang-option {
+    background: var(--royal-black); color: var(--pure-white); border: 1px solid var(--border);
+    padding: 15px; border-radius: 15px; cursor: pointer; font-family: 'Cairo';
+}
+.lang-option:hover { background: var(--pure-white); color: var(--royal-black); }
+
+.lang-trigger, .theme-trigger {
+    position: fixed; top: 30px; display: flex; align-items: center;
+    gap: 8px; font-weight: 900; cursor: pointer; border: 1px solid var(--border);
+    padding: 8px 15px; border-radius: 50px; background: var(--royal-gray);
+    color: var(--pure-white);
+    transition: 0.3s;
+}
+.lang-trigger { left: 30px; }
+.theme-trigger { right: 30px; }
+
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* =========================================================
+   🚨 إصلاح مشكلة الملء التلقائي (Autofill) 🚨
+   ========================================================= */
+.r-field input:-webkit-autofill,
+.r-field input:-webkit-autofill:hover, 
+.r-field input:-webkit-autofill:focus, 
+.r-field input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0px 1000px var(--royal-black) inset !important;
+    -webkit-text-fill-color: var(--pure-white) !important;
+    transition: background-color 5000s ease-in-out 0s;
+    font-family: 'Cairo', sans-serif !important;
+}
+
+.r-field input:-webkit-autofill ~ label {
+    top: -12px !important;
+    font-size: 12px !important;
+    color: var(--pure-white) !important;
+    font-weight: bold !important;
+}
+
+/* =========================================================
+   🔘 تصميم دوائر الهوية (3D Neumorphism) 🔘
+   ========================================================= */
+.role-selector-zone { margin-bottom: 25px; }
+.role-circles {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.r-circle {
+    width: 60px;
+    height: 60px;
+    background: var(--royal-gray);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    cursor: pointer;
+    border: 2px solid var(--border);
+    /* تأثير الـ 3D المعتمد على المتغيرات */
+    box-shadow: 6px 6px 12px var(--circle-sh-1), 
+               -4px -4px 10px var(--circle-sh-2);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    user-select: none;
+    filter: grayscale(100%);
+    opacity: 0.6;
+    color: var(--pure-white);
+}
+
+.r-circle.of-circle {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--sub-white);
+    font-family: 'Cairo', sans-serif;
+    letter-spacing: 1px;
+}
+
+.r-circle:active {
+    transform: scale(0.95);
+    box-shadow: inset 4px 4px 10px var(--circle-sh-1), 
+                inset -4px -4px 10px var(--circle-sh-2);
+}
+
+/* --- حالات التوهج (النيون الملون) تبقى ملونة في الوضعين --- */
+.r-circle.active-doctor {
+    filter: grayscale(0%); opacity: 1;
+    border-color: #00d2ff;
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.4), inset 0 0 10px rgba(0, 210, 255, 0.1);
+    background: rgba(0, 210, 255, 0.05);
+    transform: translateY(-5px);
+}
+
+.r-circle.active-pharmacist {
+    filter: grayscale(0%); opacity: 1;
+    border-color: #42e695;
+    box-shadow: 0 0 20px rgba(66, 230, 149, 0.4), inset 0 0 10px rgba(66, 230, 149, 0.1);
+    background: rgba(66, 230, 149, 0.05);
+    transform: translateY(-5px);
+}
+
+.r-circle.active-patient {
+    filter: grayscale(0%); opacity: 1;
+    border-color: #ffcc00;
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.4), inset 0 0 10px rgba(255, 204, 0, 0.1);
+    background: rgba(255, 204, 0, 0.05);
+    transform: translateY(-5px);
+}
+
+.r-circle.active-offline {
+    filter: grayscale(0%); opacity: 1; color: #b794f4;
+    border-color: #b794f4;
+    box-shadow: 0 0 20px rgba(183, 148, 244, 0.4), inset 0 0 10px rgba(183, 148, 244, 0.1);
+    background: rgba(183, 148, 244, 0.05);
+    transform: translateY(-5px);
+}
+
+.slide-page:not(.active) {
+    opacity: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+/* =========================================================
+   🔘 زر الرجوع المتمركز (يظل في المنتصف دائماً)
+   ========================================================= */
+.auth-back-btn {
+    width: 100%; /* يأخذ عرض الصندوق بالكامل */
+    text-align: center; /* يجبر السهم على البقاء في المنتصف بالضبط */
+    cursor: pointer;
+    font-size: 30px;
+    margin-bottom: 15px;
+    color: var(--sub-white);
+    transition: 0.3s ease;
+}
+
+.auth-back-btn:hover {
+    color: var(--pure-white); /* يضيء عند تمرير الماوس */
+    transform: scale(1.1); /* يكبر قليلاً */
+}
+
+/* 🔄 السحر الحقيقي: قلب اتجاه السهم حسب اللغة */
+/* في الإنجليزية والفرنسية السهم سيشير لليسار */
+[dir="ltr"] .auth-back-btn ion-icon {
+    transform: scaleX(-1);
+}
+/* في العربية السهم يبقى كما هو يشير لليمين */
+[dir="rtl"] .auth-back-btn ion-icon {
+    transform: scaleX(1);
+}
+
+/* ==========================================
+   🛡️ درع الحماية لجميع النوافذ الداخلية (منع الاختفاء تحت الساعة)
+   ========================================== */
+
+/* حماية الشريط العلوي للنوافذ المنزلقة (البروفايل، التعليقات، إلخ) */
+.slide-header, 
+.profile-header, 
+.modal-header {
+    /* نقوم بدمج مسافة الأمان الخاصة بالهاتف + 15 بكسل إضافية للجمالية */
+    padding-top: calc(env(safe-area-inset-top, 35px) + 15px) !important;
+    align-items: center !important;
+}
+
+/* حماية أزرار الإغلاق (X) العائمة (مثل نوافذ الصور أو القصص) */
+.close-btn,
+.close-story-btn,
+ion-icon.close-circle {
+    top: calc(env(safe-area-inset-top, 35px) + 15px) !important;
+}

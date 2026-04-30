@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>طوارئ الصيدليات</title>
+    
+    <link rel="stylesheet" href="../css/patient_dash.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+    <style>
+        body { margin: 0; padding: 0; background: var(--bg-color, #0a0a0a); min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; }
+        
+        #pharmacy-slide {
+            position: relative !important;
+            display: flex !important;
+            flex-direction: column;
+            transform: none !important;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        .slide-header {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            padding-top: calc(env(safe-area-inset-top, 15px) + 15px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        .back-btn { font-size: 28px; cursor: pointer; color: var(--text-main); }
+
+        /* --- نظام التنبيهات الملكي (Royal UI) --- */
+        #royal-toast {
+            position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+            background: var(--card-bg, #1e1e1e); color: white; padding: 12px 25px;
+            border-radius: 25px; font-family: 'Cairo'; font-size: 14px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+            z-index: 999999; transition: bottom 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: flex; align-items: center; gap: 10px; white-space: nowrap;
+        }
+
+        .custom-alert-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            display: none; justify-content: center; align-items: center; z-index: 9999999;
+        }
+        .custom-alert-box {
+            background: #111; border: 1px solid var(--border-color);
+            padding: 25px; border-radius: 25px; width: 80%; max-width: 350px;
+            text-align: center; animation: scaleUp 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="top-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; background: var(--purple, #b794f4); width: 0%; z-index: 999999; transition: width 0.3s ease; display: none; box-shadow: 0 0 10px var(--purple);"></div>
+
+    <div id="pharmacy-slide" class="slide-page">
+        <div class="slide-header">
+           <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.goToPage('patient_dash.html')"></ion-icon>
+            <h2 style="margin: 0; font-size: 18px; color: var(--purple);" data-i18n="pharmacy_slide_title">طوارئ الصيدليات 🌙</h2>
+        </div>
+        
+        <div style="padding: 20px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 15px; border: 1px solid var(--border-color);">
+                <button id="tab-btn-med" class="hm-btn" style="margin:0; flex:1; background:var(--purple); color:white; border-radius:10px;" onclick="window.pharmacyEngine.switchTab('med')" data-i18n="tab_med_hunter">صائد الأدوية 📡</button>
+                <button id="tab-btn-duty" class="hm-btn" style="margin:0; flex:1; background:transparent; color:var(--text-sub); border-radius:10px; border:none;" onclick="window.pharmacyEngine.switchTab('duty')" data-i18n="tab_night_duty">المناوبات 🌙</button>
+            </div>
+
+            <div id="section-med-hunter">
+                <div style="background: rgba(183, 148, 244, 0.1); border: 1px solid var(--purple); padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 20px;">
+                    <ion-icon name="radio-outline" style="font-size: 40px; color: var(--purple); animation: spin 3s linear infinite;"></ion-icon>
+                    <p style="font-size: 13px; color: #ccc; margin-top: 10px;" data-i18n="med_hunter_desc">أرسل اسم الدواء المفقود، وسيقوم الرادار بإرسال تنبيه لكل الصيادلة. بمجرد أن يؤكد صيدلي توفره، سيصلك إشعار بمكانه!</p>
+                </div>
+
+                <input type="text" id="missing-med-input" class="hm-input" placeholder="اكتب اسم الدواء بدقة (مثال: Lovenox 4000)" data-i18n-placeholder="missing_med_ph">
+                <button class="hm-btn" style="background: var(--purple); color: white; box-shadow: 0 0 15px rgba(183, 148, 244, 0.5);" onclick="window.pharmacyEngine.broadcastMed()" data-i18n="btn_launch_med_radar">إطلاق رادار البحث 🚀</button>
+
+                <h3 style="font-size: 15px; color: var(--text-main); margin-top: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;" data-i18n="my_searches_title">عمليات البحث الخاصة بي:</h3>
+                <div id="med-requests-list" style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px; padding-bottom: 50px;">
+                </div>
+            </div>
+
+            <div id="section-night-duty" style="display: none;">
+                <p style="color: var(--text-sub); font-size: 13px; text-align: center; margin-bottom: 15px;" data-i18n="night_duty_desc">العيادات والصيدليات المفتوحة <b>الآن</b> في ولايتك.</p>
+                
+                <div id="night-duty-list" style="display: flex; flex-direction: column; gap: 12px; padding-bottom: 50px;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="royal-toast"><ion-icon name="information-circle"></ion-icon> <span id="toast-msg">رسالة...</span></div>
+
+    <div id="royal-alert-overlay" class="custom-alert-overlay">
+        <div class="custom-alert-box">
+            <ion-icon id="alert-icon" name="alert-circle" style="font-size: 50px; margin-bottom: 10px;"></ion-icon>
+            <h3 id="alert-title" style="margin: 0 0 10px 0; color: white; font-family: 'Cairo';">تنبيه</h3>
+            <p id="alert-msg" style="color: var(--text-sub); font-size: 14px; margin-bottom: 20px; font-family: 'Cairo';"></p>
+            <button class="hm-btn" onclick="document.getElementById('royal-alert-overlay').style.display='none'" style="width: 100%; margin: 0; background: var(--purple); color: white; font-weight: bold;">حسناً</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="../js/languages.js"></script>
+    
+    <script>
+        // 1. تهيئة فايربيس
+        const firebaseConfig = {
+            apiKey: "AIzaSyDF6MRRmzfXJBW07Xb_rXVK2hJY_Xtcm6A",
+            authDomain: "healthmate-web-3d983.firebaseapp.com",
+            projectId: "healthmate-web-3d983",
+            storageBucket: "healthmate-web-3d983.firebasestorage.app",
+            appId: "1:1005719156245:web:7478909058de336f1b801c"
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+
+        // --- دوال التنبيهات الملكية (بديلة لـ alert الزفت) ---
+        window.showToast = function(msg) {
+            const toast = document.getElementById('royal-toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.style.bottom = '30px';
+            setTimeout(() => { toast.style.bottom = '-100px'; }, 3000);
+        };
+
+        window.royalAlert = function(title, msg, iconName = 'alert-circle', color = 'var(--purple)') {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-msg').innerText = msg;
+            document.getElementById('alert-icon').name = iconName;
+            document.getElementById('alert-icon').style.color = color;
+            document.getElementById('royal-alert-overlay').style.display = 'flex';
+        };
+
+        // 🚀 محرك الانتقال السلس
+        window.goToPage = function(pageUrl) {
+            const progressBar = document.getElementById('top-progress-bar');
+            if (progressBar) {
+                progressBar.style.display = 'block';
+                setTimeout(() => { progressBar.style.width = '70%'; }, 10);
+                setTimeout(() => {
+                    progressBar.style.width = '100%';
+                    window.location.href = pageUrl;
+                }, 300);
+            } else {
+                window.location.href = pageUrl;
+            }
+        };
+
+        // 🚨 الخدعة السحرية: الانتقال للرادار مع تفعيل خط التحميل
+        window.goToRadarWithLocation = function(lat, lng) {
+            localStorage.setItem('target_radar_lat', lat);
+            localStorage.setItem('target_radar_lng', lng);
+            window.goToPage('health_radar.html'); // استخدام goToPage لضمان ظهور الخط
+        };
+
+        // 2. المحرك الرئيسي 
+        window.pharmacyEngine = {
+            unsubMeds: null, 
+            unsubDuty: null, 
+
+            init: function() {
+                this.loadMyMedRequests();
+                this.loadNightDuty();
+            },
+
+            switchTab: function(tabName) {
+                const btnMed = document.getElementById('tab-btn-med');
+                const btnDuty = document.getElementById('tab-btn-duty');
+                const secMed = document.getElementById('section-med-hunter');
+                const secDuty = document.getElementById('section-night-duty');
+
+                if (tabName === 'med') {
+                    btnMed.style.background = 'var(--purple)'; btnMed.style.color = 'white';
+                    btnDuty.style.background = 'transparent'; btnDuty.style.color = 'var(--text-sub)';
+                    secMed.style.display = 'block';
+                    secDuty.style.display = 'none';
+                } else {
+                    btnDuty.style.background = 'var(--blue)'; btnDuty.style.color = 'black';
+                    btnMed.style.background = 'transparent'; btnMed.style.color = 'var(--text-sub)';
+                    secDuty.style.display = 'block';
+                    secMed.style.display = 'none';
+                }
+            },
+
+            broadcastMed: async function() {
+                const medName = document.getElementById('missing-med-input').value.trim();
+                const user = firebase.auth().currentUser;
+
+                if (!user) return window.royalAlert("تسجيل الدخول", "يجب أن تملك حساباً لإطلاق نداء الأدوية.", "lock-closed", "var(--orange)");
+                if (!medName) return window.showToast("⚠️ يرجى كتابة اسم الدواء أولاً!");
+
+                try {
+                    window.showToast("جاري إطلاق رادار البحث... 📡");
+                    await firebase.firestore().collection('medicine_requests').add({
+                        patientId: user.uid,
+                        medName: medName,
+                        status: 'searching', 
+                        foundAtInfo: null, 
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    document.getElementById('missing-med-input').value = '';
+                    window.royalAlert("تم إطلاق الرادار!", `جاري البحث عن (${medName}) في جميع الصيدليات.`, "radio", "var(--purple)");
+                } catch (error) {
+                    window.showToast("حدث خطأ أثناء الإرسال ❌");
+                }
+            },
+
+            loadMyMedRequests: function() {
+                const user = firebase.auth().currentUser;
+                if (!user) return;
+                const listDiv = document.getElementById('med-requests-list');
+                
+                if(this.unsubMeds) this.unsubMeds();
+
+                this.unsubMeds = firebase.firestore().collection('medicine_requests')
+                    .where('patientId', '==', user.uid)
+                    .orderBy('timestamp', 'desc')
+                    .onSnapshot(snap => {
+                        listDiv.innerHTML = '';
+                        if (snap.empty) {
+                            listDiv.innerHTML = `<p style="text-align:center; color:var(--text-sub);">لم تقم بإطلاق أي رادار للبحث بعد.</p>`;
+                            return;
+                        }
+
+                        snap.forEach(doc => {
+                            const req = doc.data();
+                            const reqId = doc.id;
+                            const isFound = req.status === 'found'; 
+                            
+                            const statusText = isFound 
+                                ? `<span style="color:var(--green); font-weight:bold;">تم العثور على الدواء ✅</span>` 
+                                : `<span class="radar-ping"></span> جاري البحث في الصيدليات...`;
+                            
+                            let foundInfoHTML = '';
+                            if (isFound) {
+                                const mapAction = (req.foundLat && req.foundLng) 
+                                    ? `window.goToRadarWithLocation(${req.foundLat}, ${req.foundLng})` 
+                                    : `window.showToast('لم يقم الصيدلي بتحديد موقعه ❌')`;
+
+                                foundInfoHTML = `
+                                    <div style="margin-top: 15px; padding: 15px; background: rgba(66, 230, 149, 0.1); border: 1px dashed var(--green); border-radius: 12px;">
+                                        <p style="margin: 0 0 10px 0; font-size: 14px; color: white;">📍 متوفر في: <b style="color: var(--green);">${req.foundAtInfo}</b></p>
+                                        <button class="hm-btn" style="background: var(--green); color: black; font-weight: bold; width: 100%; margin: 0;" onclick="${mapAction}">اذهب للصيدلية</button>
+                                    </div>`;
+                            } else {
+                                foundInfoHTML = `<div style="margin-top: 10px;"><button class="hm-btn" style="background: transparent; border: 1px solid var(--red); color: var(--red); padding: 5px; width: auto;" onclick="window.pharmacyEngine.cancelRequest('${reqId}')">إلغاء البحث</button></div>`;
+                            }
+
+                            listDiv.innerHTML += `
+                                <div class="med-req-card" style="background:rgba(255,255,255,0.03); padding:15px; border-radius:15px; border: 1px solid ${isFound ? 'var(--green)' : 'rgba(255,255,255,0.05)'}; margin-bottom:12px;">
+                                    <h4 style="margin:0; color:white;">💊 ${req.medName}</h4>
+                                    <p style="margin:5px 0; font-size:12px; color:var(--text-sub);">${statusText}</p>
+                                    ${foundInfoHTML}
+                                </div>`;
+                        });
+                    });
+            },
+
+            cancelRequest: async function(reqId) {
+                try {
+                    await firebase.firestore().collection('medicine_requests').doc(reqId).delete();
+                    window.showToast("تم إلغاء البحث 🗑️");
+                } catch(e) {}
+            },
+
+            loadNightDuty: function() {
+                const listDiv = document.getElementById('night-duty-list');
+                listDiv.innerHTML = `<div style="text-align:center; padding:20px;"><ion-icon name="sync" style="animation: spin 1s linear infinite; font-size: 30px; color:var(--blue);"></ion-icon></div>`;
+                
+                if(this.unsubDuty) this.unsubDuty();
+
+                this.unsubDuty = firebase.firestore().collection('users')
+                    .where('isNightDuty', '==', true)
+                    .onSnapshot(snapshot => {
+                        listDiv.innerHTML = '';
+                        if (snapshot.empty) {
+                            listDiv.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-sub);"><ion-icon name="moon-outline" style="font-size:50px; opacity:0.5;"></ion-icon><p>لا توجد صيدليات مناوبة الآن.</p></div>`;
+                            return;
+                        }
+
+                        snapshot.forEach(doc => {
+                            const place = doc.data();
+                            const title = place.role === 'doctor' ? `د. ${place.name}` : `صيدلية ${place.name}`;
+                            const lat = place.latitude || 0;
+                            const lng = place.longitude || 0;
+                            const mapAction = (lat !== 0) ? `window.goToRadarWithLocation(${lat}, ${lng})` : `window.showToast('الموقع غير محدد ❌')`;
+
+                            listDiv.innerHTML += `
+                                <div class="duty-card" style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 15px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="display:flex; align-items:center; gap:15px;">
+                                        <div style="background:rgba(0,210,255,0.2); color:var(--blue); width:45px; height:45px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:24px;">
+                                            <ion-icon name="${place.role === 'doctor' ? 'medkit' : 'medical'}"></ion-icon>
+                                        </div>
+                                        <div><h4 style="margin:0; color:white;">${title}</h4><p style="margin:0; font-size:12px; color:var(--green);">مفتوح الآن ✅</p></div>
+                                    </div>
+                                    <button onclick="${mapAction}" style="background:var(--card-bg); border:1px solid var(--border-color); color:var(--text-main); width:40px; height:40px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:20px;"><ion-icon name="location"></ion-icon></button>
+                                </div>`;
+                        });
+                    });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            firebase.auth().onAuthStateChanged((user) => {
+                if(user) { window.pharmacyEngine.init(); }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Healthmate | My Appointments</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-sub: #888888;
+            --blue: #00d2ff; --green: #10b981; --red: #ff4b2b;
+        }
+
+        body {
+            margin: 0; padding: 0; font-family: 'Cairo', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1a1a2e 0%, var(--bg-color) 80%);
+            color: var(--text-main); min-height: 100vh; overflow-x: hidden;
+        }
+
+        /* هيدر الصفحة */
+        .page-header {
+            padding: calc(env(safe-area-inset-top, 40px) + 15px) 20px 20px;
+            display: flex; align-items: center; gap: 15px;
+            background: rgba(0,0,0,0.3); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000;
+        }
+
+        .back-btn { font-size: 28px; cursor: pointer; color: var(--text-main); transition: 0.2s; }
+        .back-btn:active { transform: scale(0.8); }
+
+        /* البطاقات الزجاجية للمواعيد */
+        .appointments-container { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+
+        .app-card {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 20px; padding: 15px; position: relative; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: 0.3s;
+        }
+
+        .status-badge {
+            display: inline-block; padding: 5px 12px; border-radius: 20px;
+            font-size: 11px; font-weight: bold; margin-top: 10px; border: 1px solid transparent;
+        }
+        .status-pending { background: rgba(255, 204, 0, 0.1); color: #ffcc00; border-color: rgba(255, 204, 0, 0.3); }
+        .status-accepted { background: rgba(16, 185, 129, 0.1); color: var(--green); border-color: rgba(16, 185, 129, 0.3); }
+        .status-rejected { background: rgba(255, 75, 43, 0.1); color: var(--red); border-color: rgba(255, 75, 43, 0.3); }
+
+        /* الطابور الذكي (Live Queue) */
+        .queue-box {
+            background: linear-gradient(90deg, rgba(0, 210, 255, 0.05), transparent);
+            border-top: 1px solid rgba(0, 210, 255, 0.1);
+            padding: 15px; margin-top: 15px; border-radius: 0 0 15px 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .q-number {
+            background: var(--blue); color: #000; font-weight: 900; font-size: 20px;
+            width: 45px; height: 45px; border-radius: 14px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
+        }
+
+        /* التنبيهات */
+        #royal-toast {
+            position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+            background: var(--text-main); color: #000; padding: 12px 25px; border-radius: 25px; font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 999999; transition: 0.4s; display: flex; align-items: center; gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="page-header">
+        <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.history.back()"></ion-icon>
+        <h2 style="margin: 0; font-size: 20px; font-weight: 900;" data-i18n="my_apps_title">مواعيدي المحجوزة 📅</h2>
+    </header>
+
+    <p style="color: var(--text-sub); font-size: 13px; text-align: center; margin: 15px 20px 5px;" data-i18n="my_apps_desc">هنا يمكنك متابعة حالة طلباتك (قبول، رفض، أو انتظار) وتتبع الطابور.</p>
+
+    <div class="appointments-container" id="appointments-list">
+        <div style="text-align:center; padding:50px; color:var(--blue);">
+            <ion-icon name="sync" style="font-size:40px; animation: spin 1s linear infinite;"></ion-icon>
+        </div>
+    </div>
+
+    <div id="royal-toast"><ion-icon name="information-circle"></ion-icon> <span id="toast-msg"></span></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="../js/languages.js"></script>
+    <script src="patient_dash.js"></script> <script>
+        // 1. نظام التنبيهات
+        window.showToast = function(msg) {
+            const toast = document.getElementById('royal-toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.style.bottom = '30px';
+            setTimeout(() => { toast.style.bottom = '-100px'; }, 3000);
+        };
+
+        // 2. محرك المواعيد القوي (مستقل ويعمل هنا مباشرة)
+        window.AppointmentsPageEngine = {
+            init: function() {
+                const listDiv = document.getElementById('appointments-list');
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                
+                firebase.auth().onAuthStateChanged((user) => {
+                    if (!user) {
+                        window.location.href = "../index.html";
+                        return;
+                    }
+
+                    firebase.firestore().collection('appointments')
+                        .where('patientId', '==', user.uid)
+                        .orderBy('timestamp', 'desc')
+                        .onSnapshot((snapshot) => {
+                            if (snapshot.empty) {
+                                listDiv.innerHTML = `
+                                    <div style="text-align:center; padding:50px; color:#888;">
+                                        <ion-icon name="calendar-clear-outline" style="font-size:60px; opacity:0.2;"></ion-icon>
+                                        <p>${dict.no_appointments_yet || 'ليس لديك أي مواعيد محجوزة بعد.'}</p>
+                                    </div>`;
+                                return;
+                            }
+
+                            listDiv.innerHTML = '';
+                            const batch = firebase.firestore().batch(); // لتحديث إشعارات المقروئية (إلغاء النقطة الحمراء)
+                            let hasUnread = false;
+
+                            snapshot.forEach(doc => {
+                                const app = doc.data();
+                                const appId = doc.id;
+                                
+                                // إذا الموعد مقبول/مرفوض ولم يشاهده، نعلمه كمقروء
+                                if (['accepted', 'rejected'].includes(app.status) && app.isRead !== true) {
+                                    batch.update(doc.ref, { isRead: true });
+                                    hasUnread = true;
+                                }
+
+                                let statusClass = 'status-pending';
+                                let statusText = dict.status_pending || 'قيد الانتظار ⏳';
+                                let statusColor = '#ffcc00';
+                                let queueHtml = ''; 
+
+                                if (app.status === 'accepted') { 
+                                    statusClass = 'status-accepted'; 
+                                    statusText = dict.status_accepted || 'تم القبول ✅'; 
+                                    statusColor = '#10b981'; 
+                                    
+                                    const qNum = app.queueNumber || '?';
+                                    queueHtml = `
+                                        <div class="queue-box">
+                                            <div style="display:flex; align-items:center; gap:12px;">
+                                                <div class="q-number">${qNum}</div>
+                                                <div>
+                                                    <span style="color: var(--text-sub); font-size: 11px;">${dict.your_queue_number || 'رقمك في الطابور'}</span>
+                                                    <h4 style="margin: 0; color: white; font-size: 14px;">${dict.live_queue_title || 'الطابور الذكي 📊'}</h4>
+                                                </div>
+                                            </div>
+                                            <button onclick="window.AppointmentsPageEngine.checkLiveQueue('${app.doctorId}', '${qNum}')" style="background: rgba(0, 210, 255, 0.15); color: var(--blue); border: 1px solid var(--blue); padding: 8px 15px; border-radius: 12px; font-weight: bold; cursor: pointer; display:flex; align-items:center; gap:5px; transition:0.3s;">
+                                                <ion-icon name="pulse-outline"></ion-icon> ${dict.track_queue || 'تتبع دوري'}
+                                            </button>
+                                        </div>
+                                    `;
+                                } else if (app.status === 'rejected') { 
+                                    statusClass = 'status-rejected'; 
+                                    statusText = dict.status_rejected || 'تم الرفض ❌'; 
+                                    statusColor = '#ff4b2b'; 
+                                }
+
+                                listDiv.innerHTML += `
+                                    <div class="app-card" style="border-inline-start: 4px solid ${statusColor};">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                            <div>
+                                                <h4 style="margin:0 0 5px 0; font-size:16px; display:flex; align-items:center; gap:5px;">
+                                                    <ion-icon name="person-circle" style="color:var(--text-sub); font-size:22px;"></ion-icon>
+                                                    ${dict.dr_prefix || 'د. '}${app.doctorName}
+                                                </h4>
+                                                <p style="color:#ccc; font-size:12px; margin:0 0 10px 0; display:flex; align-items:center; gap:5px;">
+                                                    <ion-icon name="calendar-outline" style="color:var(--blue);"></ion-icon> ${app.date} 
+                                                    <span style="color:#555;">|</span>
+                                                    <ion-icon name="time-outline" style="color:var(--orange);"></ion-icon> ${app.time}
+                                                </p>
+                                                <span class="status-badge ${statusClass}">${statusText}</span>
+                                            </div>
+                                            
+                                            <button onclick="window.AppointmentsPageEngine.cancelAppointment('${appId}')" title="${dict.cancel_appointment || 'إلغاء الموعد'}" style="background: rgba(255, 75, 43, 0.1); color: var(--red); border: none; padding: 10px; border-radius: 50%; cursor: pointer;">
+                                                <ion-icon name="trash-outline" style="font-size: 18px;"></ion-icon>
+                                            </button>
+                                        </div>
+                                        ${queueHtml}
+                                    </div>
+                                `;
+                            });
+
+                            // تطبيق تغييرات isRead لكي تختفي النقطة الحمراء في اللوحة
+                            if (hasUnread) { batch.commit(); }
+                        });
+                });
+            },
+
+            cancelAppointment: async function(appId) {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                const confirmed = await window.royalConfirm(
+                    dict.cancel_booking_title || "إلغاء الحجز", 
+                    dict.cancel_booking_msg || "هل أنت متأكد من الإلغاء؟", 
+                    "alert-circle", 
+                    "var(--red)"
+                );
+
+                if (confirmed) {
+                    window.showToast(dict.deleting_request || "جاري الإلغاء... ⏳");
+                    await firebase.firestore().collection('appointments').doc(appId).delete();
+                    window.showToast(dict.cancel_success || "تم الإلغاء بنجاح 🗑️");
+                }
+            },
+
+         checkLiveQueue: async function(doctorId, myQueueNumber) {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                
+                if (myQueueNumber === '?') {
+                    return window.showToast(dict.wait_doctor_queue || "الطبيب لم يحدد رقمك بعد، يرجى الانتظار ⏳");
+                }
+
+                window.showToast(dict.fetching_queue || "جاري الاتصال بعيادة الطبيب... 📡");
+
+                try {
+                    const doc = await firebase.firestore().collection('live_queues').doc(doctorId).get();
+                    let currentServing = 1, timePerPatient = 15;
+                    
+                    if (doc.exists) {
+                        // إجبار تحويل الداتا إلى أرقام صحيحة
+                        currentServing = parseInt(doc.data().currentServing) || 1;
+                        timePerPatient = parseInt(doc.data().timePerPatient) || 15;
+                    }
+
+                    const myNum = parseInt(myQueueNumber);
+                    const patientsAhead = myNum - currentServing;
+                    
+                    if (patientsAhead < 0) {
+                        window.royalAlert(dict.queue_passed_title || "تجاوزك الدور!", dict.queue_passed_msg || "لقد فات دورك! توجه للاستقبال فوراً ⚠️", "warning-outline", "var(--red)");
+                    } else if (patientsAhead === 0) {
+                        window.royalAlert(dict.queue_now_title || "دورك الآن!", dict.queue_now_msg || "تفضل بالدخول لغرفة الطبيب 🟢", "checkmark-circle", "var(--green)");
+                    } else {
+                        const waitMinutes = patientsAhead * timePerPatient;
+                        
+                        // الرسالة الافتراضية إذا لم يجد القاموس
+                        let msg = `الطبيب يفحص الرقم <b>${currentServing}</b> الآن.<br>أمامك <b>${patientsAhead}</b> مرضى.<br>الوقت المتوقع: <b>${waitMinutes} دقيقة</b> ⏳`;
+                        
+                        // 🚨 السحر هنا: تعويض الكلمات بالأرقام الحقيقية باستخدام split و join 🚨
+                        if (dict.queue_status_msg) {
+                            msg = dict.queue_status_msg
+                                .split('{current}').join(`<b>${currentServing}</b>`)
+                                .split('{ahead}').join(`<b>${patientsAhead}</b>`)
+                                .split('{time}').join(`<b>${waitMinutes}</b>`);
+                        }
+
+                        window.royalAlert(dict.live_queue_title || "الطابور الذكي 📊", msg, "people-outline", "var(--blue)");
+                    }
+                } catch(e) {
+                    window.showToast("خطأ في جلب الطابور ❌");
+                    console.error(e);
+                }
+            }
+        };
+
+        // تشغيل المحرك
+        document.addEventListener('DOMContentLoaded', () => {
+            window.AppointmentsPageEngine.init();
+        });
+    </script>
+</body>
+</html>

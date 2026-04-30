@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>الرادار الصحي</title>
+    
+    <link rel="stylesheet" href="../css/patient_dash.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+
+    <style>
+        body { margin: 0; padding: 0; background: var(--bg-color, #0a0a0a); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        /* إعداد الصفحة لتكون بملء الشاشة باستقلالية */
+        #radar-slide {
+            position: relative !important;
+            display: flex !important;
+            flex-direction: column;
+            flex: 1;
+            transform: none !important;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #health-map {
+            flex: 1; /* يأخذ باقي مساحة الشاشة */
+            width: 100%;
+            z-index: 1;
+        }
+
+        /* إصلاح الهيدر ليتناسب مع الصفحة المستقلة */
+        .slide-header {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            padding-top: calc(env(safe-area-inset-top, 15px) + 15px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        .back-btn { font-size: 28px; cursor: pointer; color: var(--text-main); }
+    </style>
+</head>
+<body>
+
+    <div id="top-progress-bar" style="position: fixed; top: 0; left: 0; height: 3px; background: var(--blue, #00f3ff); width: 0%; z-index: 999999; transition: width 0.3s ease; display: none; box-shadow: 0 0 10px var(--blue);"></div>
+
+    <div id="radar-slide" class="slide-page">
+        <div class="slide-header">
+           <ion-icon name="arrow-forward-outline" class="back-btn" onclick="window.goToPage('patient_dash.html')"></ion-icon>
+            <h2 style="margin: 0; font-size: 18px;" data-i18n="radar_slide_title">الرادار الصحي 📍</h2>
+        </div>
+        
+        <div id="health-map"></div>
+        
+        <button onclick="window.radarEngine.locateMe()" style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 1000; background: var(--blue); color: #000; border: none; padding: 15px 25px; border-radius: 30px; font-family: 'Cairo'; font-weight: bold; box-shadow: 0 10px 20px rgba(0,210,255,0.4); display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <ion-icon name="locate" style="font-size: 20px;"></ion-icon> <span data-i18n="btn_locate_me">حدد موقعي الآن</span>
+        </button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="../js/languages.js"></script> 
+
+    <script>
+        
+        // 1. تهيئة فايربيس (انسخ مفاتيحك إذا لم تعمل)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDF6MRRmzfXJBW07Xb_rXVK2hJY_Xtcm6A",
+            authDomain: "healthmate-web-3d983.firebaseapp.com",
+            projectId: "healthmate-web-3d983",
+            storageBucket: "healthmate-web-3d983.firebasestorage.app",
+            appId: "1:1005719156245:web:7478909058de336f1b801c"
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+
+        // ========================================================
+        // 🚀 نظام التنبيهات (Toast) الاحترافي بديل الـ alert الغبي
+        // ========================================================
+        window.showToast = function(msg, duration = 3000) {
+            let toast = document.getElementById('royal-radar-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'royal-radar-toast';
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: -80px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(10, 10, 10, 0.85);
+                    backdrop-filter: blur(12px);
+                    color: white;
+                    padding: 12px 25px;
+                    border-radius: 50px;
+                    font-family: 'Cairo', sans-serif;
+                    font-size: 14px;
+                    font-weight: bold;
+                    box-shadow: 0 10px 25px rgba(0, 243, 255, 0.3);
+                    border: 1px solid rgba(0, 243, 255, 0.2);
+                    z-index: 9999999;
+                    transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s;
+                    opacity: 0;
+                    white-space: nowrap;
+                    pointer-events: none;
+                `;
+                document.body.appendChild(toast);
+            }
+            toast.innerHTML = msg;
+            
+            // إظهار التنبيه
+            setTimeout(() => {
+                toast.style.bottom = '110px'; // يرتفع فوق زر "حدد موقعي"
+                toast.style.opacity = '1';
+            }, 10);
+
+            // إخفاء التنبيه
+            clearTimeout(window.toastTimeout);
+            window.toastTimeout = setTimeout(() => {
+                toast.style.bottom = '-80px';
+                toast.style.opacity = '0';
+            }, duration);
+        };
+
+        // 🚀 محرك الانتقال السلس للرجوع
+        window.goToPage = function(pageUrl) {
+            const progressBar = document.getElementById('top-progress-bar');
+            if (progressBar) {
+                progressBar.style.display = 'block';
+                setTimeout(() => { progressBar.style.width = '70%'; }, 10);
+                setTimeout(() => {
+                    progressBar.style.width = '100%';
+                    window.location.href = pageUrl;
+                }, 300);
+            } else {
+                window.location.href = pageUrl;
+            }
+        };
+
+        // 2. محرك الرادار
+        window.radarEngine = {
+            map: null,
+            userMarker: null,
+            providersData: [], 
+
+            init: function() {
+                // إصلاح مشكلة الحجم الرمادي في الخريطة
+                setTimeout(() => {
+                    if (!this.map) {
+                        this.map = L.map('health-map', { zoomControl: false }).setView([36.7525, 3.04197], 6);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19, 
+                            attribution: '© Healthmate Radar'
+                        }).addTo(this.map);
+                        L.control.zoom({ position: 'topleft' }).addTo(this.map);
+                    }
+                    this.fetchHealthcareProviders();
+                    this.map.invalidateSize();
+                }, 200);
+            },
+
+            locateMe: function() {
+                const dict = (window.translations && window.translations[localStorage.getItem('app_lang') || 'ar']) || {};
+                // 🚨 زرع اللغة
+                if (!navigator.geolocation) return window.showToast(dict.gps_not_supported || "جهازك لا يدعم تحديد الموقع 🚫");
+
+                window.showToast(dict.gps_scanning || "جاري مسح المنطقة... 📡");
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLat = position.coords.latitude;
+                        const userLng = position.coords.longitude;
+
+                        if (this.userMarker) this.map.removeLayer(this.userMarker); 
+                        
+                        const userIcon = L.divIcon({
+                            className: 'user-gps-pulse',
+                            html: '<div style="width:20px; height:20px; background:var(--blue); border-radius:50%; border:3px solid white; box-shadow: 0 0 15px var(--blue);"></div>',
+                            iconSize: [20, 20]
+                        });
+
+                        // 🚨 زرع اللغة
+                        this.userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(this.map)
+                            .bindPopup(`<b style='font-family:Cairo;'>${dict.you_are_here || 'أنت هنا 📍'}</b>`).openPopup();
+
+                        let bounds = [[userLat, userLng]]; 
+                        let nearbyCount = 0;
+
+                        this.providersData.forEach(p => {
+                            const distance = this.calculateDistance(userLat, userLng, p.latitude, p.longitude);
+                            if (distance <= 30) {
+                                nearbyCount++;
+                                bounds.push([p.latitude, p.longitude]); 
+                            }
+                        });
+
+                        if (nearbyCount > 0) {
+                            // 🚨 زرع اللغة مع استبدال الرقم
+                            let msg = (dict.clinics_found || "تم العثور على {count} عيادة قريبة منك! 📍").replace('{count}', nearbyCount);
+                            window.showToast(msg);
+                            this.map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+                        } else {
+                            this.map.flyTo([userLat, userLng], 15); 
+                        }
+                    },
+                    (error) => { window.showToast(dict.gps_failed || "فشل الالتقاط. يرجى تفعيل الـ GPS!"); }, // 🚨 زرع اللغة
+                    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                );
+            },
+
+            fetchHealthcareProviders: function() {
+                firebase.auth().onAuthStateChanged(async (user) => {
+                    if (user) {
+                        try {
+                            const fetchOptions = navigator.onLine ? 'default' : 'cache';
+                            let snapshot;
+                            try {
+                                snapshot = await firebase.firestore().collection("users").get({ source: fetchOptions });
+                            } catch(e) {
+                                snapshot = await firebase.firestore().collection("users").get({ source: 'cache' });
+                            }
+
+                            this.providersData = []; 
+                            snapshot.forEach(doc => {
+                                const data = doc.data();
+                                if (data.latitude && data.longitude && (data.role === "doctor" || data.role === "pharmacist")) {
+                                    this.providersData.push({ latitude: parseFloat(data.latitude), longitude: parseFloat(data.longitude) });
+
+                                    const isDoc = data.role === "doctor";
+                                    const customMarker = L.divIcon({
+                                        className: 'custom-map-marker',
+                                        html: `<div style="background:${isDoc ? "#42e695" : "#b794f4"}; width:35px; height:35px; border-radius:50%; display:flex; justify-content:center; align-items:center; border:2px solid white; box-shadow:0 5px 10px rgba(0,0,0,0.5); color:black; font-size:20px;"><ion-icon name="${isDoc ? "medkit" : "medical"}"></ion-icon></div>`,
+                                        iconSize: [35, 35], iconAnchor: [17, 35], popupAnchor: [0, -35]
+                                    });
+
+                                    L.marker([data.latitude, data.longitude], { icon: customMarker }).addTo(this.map).bindPopup(`
+                                        <div style="font-family:'Cairo'; text-align:center;">
+                                            <h4 style="margin:0; font-size:14px; color:#111;">${data.name}</h4>
+                                            <p style="margin:0; font-size:11px; color:#666;">${data.specialty || ''}</p>
+                                        </div>
+                                    `);
+                                }
+                            });
+                        } catch (error) { console.error("خطأ الرادار", error); }
+                    }
+                });
+            },
+
+            flyToProvider: function(lat, lng) {
+                // بما أننا في صفحة مستقلة، نكتفي بالطيران المباشر بدون فتح نوافذ
+                setTimeout(() => {
+                    if (this.map) this.map.flyTo([lat, lng], 18, { animate: true, duration: 2 });
+                }, 500);
+            },
+
+            calculateDistance: function(lat1, lon1, lat2, lon2) {
+                const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+                return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); 
+            }
+        };
+
+        // 3. التشغيل واستقبال أمر الطيران من صفحة الأطباء 🎯
+        document.addEventListener('DOMContentLoaded', () => {
+            window.radarEngine.init();
+
+            // التحقق من الذاكرة: هل نحن قادمون من زر "عرض الموقع" في صفحة الأطباء؟
+            const targetLat = localStorage.getItem('target_radar_lat');
+            const targetLng = localStorage.getItem('target_radar_lng');
+
+            if (targetLat && targetLng) {
+                // ننتظر ثانية واحدة حتى ترسم الخريطة نفسها، ثم نطير لعيادة الطبيب
+                setTimeout(() => {
+                    window.radarEngine.flyToProvider(parseFloat(targetLat), parseFloat(targetLng));
+                    // مسح الذاكرة لكي لا يطير لنفس الطبيب إذا فتح المريض الرادار بشكل عادي لاحقاً
+                    localStorage.removeItem('target_radar_lat');
+                    localStorage.removeItem('target_radar_lng');
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
